@@ -25,7 +25,7 @@ async function addUsersToGraph(addUser: boolean = true) {
   for (const user of users) {
     if (addUser) {
       const studentData = {
-        action: "CREATE A SINGLE STUDENT ENTITY WITH THE GIVEN PROPERTIES. DO NOT CREATE ENTITES FOR THESE PROPERTIES. JUST CREATE THE STUDENT ENTITY.",
+        action: "CREATE A SINGLE STUDENT ENTITY WITH THE GIVEN PROPERTIES. DO NOT CREATE ENTITES FOR THESE PROPERTIES. JUST CREATE the user ENTITY.",
         entity_type: "Student",
         student_id: user.user_id,
         student_first_name: user.first_name,
@@ -44,7 +44,7 @@ async function addUsersToGraph(addUser: boolean = true) {
 
     const userMessages = messages[user.user_id] || [];
     for (const message of userMessages) {
-      const studentMessage = `The student ${user.first_name} ${user.last_name} <${user.email}> said: "${message}"`;
+      const studentMessage = `the user ${user.first_name} ${user.last_name} <${user.email}> said: "${message}"`;
       await client.graph.add({
         graphId,
         type: "text",

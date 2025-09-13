@@ -117,7 +117,7 @@ export function figureOutIntention(intention: string): string {
 
 /**
  * Send a warm intro to a student.
- * But first check if the student has already sent an intro to the user. If so, do not send another intro.
+ * But first check if the user has already sent an intro to the user. If so, do not send another intro.
  *
  * @param input all the necessary information to send a warm intro and insert it into the database
  * @returns message to the AI to let it know if the intro was sent successfully or not

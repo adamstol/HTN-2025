@@ -192,7 +192,7 @@ export function userInfo(shared: SharedStore): string {
   };
   const user = process.env.ZEP_GRAPH_ID?.includes("mock") ? mockUser2 : realUser;
   return `
-Here is some info on the student you are currently chatting with:
+Here is some info on the user you are currently chatting with:
 
 Name: ${user.firstName} ${user.lastName}
 Email: ${user.email}`;

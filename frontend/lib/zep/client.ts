@@ -93,7 +93,7 @@ export async function addMessageToGlobalGraph(userData: SharedStore) {
     return;
   }
 
-  // 1. Check if the student node exists in the shared graph
+  // 1. Check if the user node exists in the shared graph
   let searchResults;
   try {
     searchResults = await client.graph.search({
@@ -130,7 +130,7 @@ export async function addMessageToGlobalGraph(userData: SharedStore) {
     student_phone: userData.user?.phone,
   };
 
-  // 2. If not, create the Student entity in the shared graph
+  // 2. If not, create the user entity in the shared graph
   if (!userExists) {
     const studentData = {
       action: "Create_entity",
@@ -159,8 +159,8 @@ export async function addMessageToGlobalGraph(userData: SharedStore) {
     return;
   }
 
-  const studentMessage = `The student ${realUser.student_first_name} ${realUser.student_last_name} <${realUser.student_email}> said: "${userData.incomingMessage}"`;
-  const mockStudentMessage = `The student ${mockUser2.student_first_name} ${mockUser2.student_last_name} <${mockUser2.student_email}> said: "${userData.incomingMessage}"`;
+  const studentMessage = `the user ${realUser.student_first_name} ${realUser.student_last_name} <${realUser.student_email}> said: "${userData.incomingMessage}"`;
+  const mockStudentMessage = `the user ${mockUser2.student_first_name} ${mockUser2.student_last_name} <${mockUser2.student_email}> said: "${userData.incomingMessage}"`;
   await client.graph.add({
     graphId,
     type: "text",

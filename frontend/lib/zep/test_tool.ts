@@ -70,12 +70,12 @@ export async function executePersonRecommendation(
     query,
     interests,
     preferences,
-    firstName = "The student",
+    firstName = "the user",
     lastName,
     email,
   } = parsed;
 
-  const searchQuery = `The student ${firstName} ${lastName ?? ""} ${email ? `(${email})` : ""
+  const searchQuery = `the user ${firstName} ${lastName ?? ""} ${email ? `(${email})` : ""
     } is looking to ${figureOutIntention(intention)}.
 
 They just said: "${query}"

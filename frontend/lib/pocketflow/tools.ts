@@ -6,7 +6,7 @@ import { extractUserInfoAndConnections, getStudentNode, searchPeople } from "../
 import { env } from "../constants";
 
 export const clubRecommendationTool = tool({
-  description: `You have extensive knowledge on all the clubs in the University of ${env.LOCATION_ID === "uofc" ? "Calgary" : "Waterloo"}, and your goal is to provide information on university clubs in ${env.LOCATION_ID === "uofc" ? "UCalgary" : "UWaterloo"}. Whether the student is looking for clubs that match their interests and preferences or just want to learn more about a club. You should use this tool to get the information needed to answer the user\'s query appropriately.`,
+  description: `You have extensive knowledge on all the clubs in the University of ${env.LOCATION_ID === "uofc" ? "Calgary" : "Waterloo"}, and your goal is to provide information on university clubs in ${env.LOCATION_ID === "uofc" ? "UCalgary" : "UWaterloo"}. Whether the user is looking for clubs that match their interests and preferences or just want to learn more about a club. You should use this tool to get the information needed to answer the user\'s query appropriately.`,
   inputSchema: z.object({
     intent: z.enum(['club_recommendation', 'club_info']),
     keyInfo: z.string().describe("The key information that we need. Whether it's the user looking for clubs that match their interests and preferences or just want to learn more about a club. Make it very thorough and accurate."),
@@ -52,12 +52,12 @@ export const clubRecommendationTool = tool({
 });
 
 export const extractUserInfoAndConnectionsTool = tool({
-  description: 'You have extensive knowledge on the current student you are interacting with. You should call this tool to get information on both the student you\'re interacting with and the people who have some commonalities with them.',
+  description: 'You have extensive knowledge on the current student you are interacting with. You should call this tool to get information on both the user you\'re interacting with and the people who have some commonalities with them.',
   inputSchema: z.object({
-    student_first_name: z.string().describe('The student\'s first name'),
-    student_last_name: z.string().describe('The student\'s last name'),
-    student_email: z.string().describe('The student\'s email'),
-    // student_phone: z.string().describe('The student\'s phone number'),
+    student_first_name: z.string().describe('the user\'s first name'),
+    student_last_name: z.string().describe('the user\'s last name'),
+    student_email: z.string().describe('the user\'s email'),
+    // student_phone: z.string().describe('the user\'s phone number'),
   }),
   execute: async (input) => extractUserInfoAndConnections(input),
 })
@@ -68,15 +68,15 @@ export const personRecommendationTool = tool({
     intention: z.enum(['friendship', 'romantic', 'mentor', 'mentee', 'gym_buddy', 'group_project', 'other']).describe("What kind of relationship is the user looking for?"),
     // keyInfo: z.string().describe('The key information that we need to help find the best possible recommendation for who they should connect with. Make it very thorough and accurate. E.g. "I would like to meet people in the gym who like improv" -> "Rami enjoys improv  likes to meet people in the gym"'),
     query: z.string().describe('the user message'),
-    firstName: z.string().describe('the student\'s first name').optional(),
-    lastName: z.string().describe('the student\'s last name').nullable(),
-    email: z.string().describe('the student\'s email').nullable(),
+    firstName: z.string().describe('the user\'s first name').optional(),
+    lastName: z.string().describe('the user\'s last name').nullable(),
+    email: z.string().describe('the user\'s email').nullable(),
     interests: z.array(z.string()).describe('User interests and hobbies based on the whole conversation. E.g. "I would like to meet people in the gym who like improv" -> ["gym", "improv"]').nullable(),
     preferences: z.string().describe('Additional preferences or requirements based on the whole conversation. E.g. "I would like to meet people in the gym who like improv" -> ["make friends in the gym", "find improv enthusiasts"]').nullable(),
   }),
   execute: async ({ intention, query, interests, preferences, firstName, lastName, email }) => {
     // Combine all info for search
-    const searchQuery = `The student ${firstName} ${lastName || ''} with email ${email || ''} is looking to ${figureOutIntention(intention)}
+    const searchQuery = `the user ${firstName} ${lastName || ''} with email ${email || ''} is looking to ${figureOutIntention(intention)}
 
     ${firstName} just shared: "${query}"
 
@@ -119,9 +119,9 @@ export const personRecommendationTool = tool({
 export const getStudentSummaryTool = tool({
   description: `You have extensive knowledge on all the people in the University of ${env.LOCATION_ID === "uofc" ? "Calgary" : "Waterloo"}, and your goal is to help provide the user with the best possible recommendation for who they should connect with`,
   inputSchema: z.object({
-    student_first_name: z.string().describe('The student\'s first name'),
-    student_last_name: z.string().describe('The student\'s last name'),
-    student_email: z.string().describe('The student\'s email'),
+    student_first_name: z.string().describe('the user\'s first name'),
+    student_last_name: z.string().describe('the user\'s last name'),
+    student_email: z.string().describe('the user\'s email'),
   }),
   execute: async (input) => {
     const node = await getStudentNode(input);
@@ -142,11 +142,11 @@ export const getStudentSummaryTool = tool({
  * Send out a warm intro from a student to another student
  */
 export const sendWarmIntroTool = tool({
-  description: 'You are an expert at sending warm intros from a student who is interested in meeting another student who shares commonalities with them. You should use this tool once a user confirms they want you (the ai) to send out a warm intro to the student they want to connect with.',
+  description: 'You are an expert at sending warm intros from a student who is interested in meeting another student who shares commonalities with them. You should use this tool once a user confirms they want you (the ai) to send out a warm intro to the user they want to connect with.',
   inputSchema: z.object({
-    from_first_name: z.string().describe('The student who requested the intro\'s first name'),
-    from_last_name: z.string().describe('The student who requested the intro\'s last name'),
-    from_email: z.string().describe('The student who requested the intro\'s email'),
+    from_first_name: z.string().describe('the user who requested the intro\'s first name'),
+    from_last_name: z.string().describe('the user who requested the intro\'s last name'),
+    from_email: z.string().describe('the user who requested the intro\'s email'),
     to_first_name: z.string().describe('The person who the intro is for\'s first name'),
     to_last_name: z.string().describe('The person who the intro is for\'s last name'),
     to_email: z.string().describe('The person who the intro is for\'s email'),
