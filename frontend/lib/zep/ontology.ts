@@ -421,10 +421,7 @@ async function createOntology() {
   const ontology = await client.graph.setOntology(
     {
       Trait,
-      MeetupType,
       Goal,
-      // Event,
-      Dorm,
       Language,
       // Group,
       // Persona,
