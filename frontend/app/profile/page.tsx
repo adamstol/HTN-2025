@@ -1,16 +1,17 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+// import { redirect } from "next/navigation";
+// import { createClient } from "@/lib/supabase/server";
 import WhatsAppButton from "@/components/WhatsAppButton";
 
 export default async function ProfilePage() {
-  const supabase = await createClient();
+  // Authentication removed - page is now publicly accessible
+  // const supabase = await createClient();
 
   // Get user session
-  const { data, error: authError } = await supabase.auth.getClaims();
-  if (authError || !data?.claims) {
-    redirect("/");
-  }
-  const claims = data.claims;
+  // const { data, error: authError } = await supabase.auth.getClaims();
+  // if (authError || !data?.claims) {
+  //   redirect("/");
+  // }
+  // const claims = data.claims;
 
   return (
     <div className="w-full max-w-md px-4">
