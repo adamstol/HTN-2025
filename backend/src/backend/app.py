@@ -3,7 +3,9 @@ import os
 from dotenv import load_dotenv
 import google.generativeai as genai
 import openai
-
+import tempfile
+from openai import OpenAI
+import json
 # Load environment variables
 load_dotenv("config/.env")
 
@@ -21,36 +23,81 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 def home():
     return jsonify({"message": "HTN2025 Backend is running 🚀"})
 
-
 @app.route("/transcribe", methods=["POST"])
 def transcribe_audio():
-    """
-    Transcribe uploaded audio into conversation JSON using the current OpenAI API.
-    """
+    if "file" not in request.files:
+        return jsonify({"error": "No audio file uploaded"}), 400
+
+    audio_file = request.files["file"]
+
     try:
-        if "file" not in request.files:
-            return jsonify({"error": "No audio file uploaded"}), 400
+        # Save uploaded file temporarily
+        with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(audio_file.filename)[1]) as temp:
+            audio_file.save(temp.name)
+            temp_path = temp.name
 
-        audio_file = request.files["file"]
-
-        # New API method
-        transcription = openai.Audio.transcribe(
+        # 1️⃣ Transcribe with Whisper (verbose JSON for timestamps)
+        transcription = openai.audio.transcriptions.create(
             model="whisper-1",
-            file=audio_file
+            file=open(temp_path, "rb"),
+            response_format="verbose_json"
         )
 
-        raw_text = transcription["text"]
+        segments = transcription.segments
+        if not segments:
+            return jsonify({"conversation": [{"speaker": "Unknown", "text": transcription.text}]}), 200
 
-        # Simple split by lines, assign alternating speakers
-        lines = [line.strip() for line in raw_text.split("\n") if line.strip()]
-        conversation = []
-        for i, line in enumerate(lines):
-            conversation.append({
-                "speaker": f"Speaker {i % 2 + 1}",
-                "text": line
-            })
+        # 2️⃣ Group nearby segments (less than 0.5s apart)
+        grouped_segments = []
+        current_group = {"start": segments[0].start, "end": segments[0].end, "text": segments[0].text.strip()}
 
-        return jsonify({"conversation": conversation})
+        for seg in segments[1:]:
+            if seg.start - current_group["end"] <= 0.5:  # 0.5 second pause threshold
+                current_group["text"] += " " + seg.text.strip()
+                current_group["end"] = seg.end
+            else:
+                grouped_segments.append(current_group)
+                current_group = {"start": seg.start, "end": seg.end, "text": seg.text.strip()}
+        grouped_segments.append(current_group)
+
+        # 3️⃣ Prepare prompt for GPT
+        segment_text = "\n".join([f"[{g['start']:.2f}-{g['end']:.2f}] {g['text']}" for g in grouped_segments])
+        prompt = f"""
+You are an assistant that separates conversation segments by speaker.
+Assume there are only two speakers.
+Assign consistent labels: Speaker 1 and Speaker 2.
+Do NOT merge multiple sentences from the same speaker; keep the flow natural.
+Output ONLY a JSON array like this:
+
+[
+  {{"speaker": "Speaker 1", "text": "First utterance"}},
+  {{"speaker": "Speaker 2", "text": "Second utterance"}}
+]
+
+Segments:
+{segment_text}
+"""
+
+        # 4️⃣ Call GPT to assign speakers
+        response = openai.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0
+        )
+
+        conversation_json_str = response.choices[0].message.content.strip()
+        conversation_list = json.loads(conversation_json_str)
+
+        # 5️⃣ Merge consecutive lines from same speaker (optional)
+        merged_conversation = []
+        for seg in conversation_list:
+            if merged_conversation and merged_conversation[-1]['speaker'] == seg['speaker']:
+                merged_conversation[-1]['text'] += " " + seg['text']
+            else:
+                merged_conversation.append(seg)
+
+        # 6️⃣ Return JSON array format
+        return jsonify({"conversation": merged_conversation})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -86,8 +133,20 @@ Conversation:
 """
 
         response = model.generate_content(prompt)
+        raw_analysis = response.text.strip()
 
-        return jsonify({"analysis": response.text.strip()})
+        # Split by lines and organize by speaker
+        speaker_facts = {}
+        for line in raw_analysis.split("\n"):
+            if ":" in line:
+                speaker, fact = line.split(":", 1)
+                speaker = speaker.strip()
+                fact = fact.strip()
+                if speaker not in speaker_facts:
+                    speaker_facts[speaker] = []
+                speaker_facts[speaker].append(fact)
+
+        return jsonify({"analysis": speaker_facts})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
