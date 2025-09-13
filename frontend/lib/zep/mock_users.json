@@ -1,0 +1,72 @@
+[
+  {
+    "user_id": "uofc001",
+    "first_name": "Alice",
+    "last_name": "Smith",
+    "email": "alice.smith@ucalgary.ca",
+    "phone": "403-111-0001"
+  },
+  {
+    "user_id": "uofc002",
+    "first_name": "Bob",
+    "last_name": "Johnson",
+    "email": "bob.johnson@ucalgary.ca",
+    "phone": "403-111-0002"
+  },
+  {
+    "user_id": "uofc003",
+    "first_name": "Carol",
+    "last_name": "Williams",
+    "email": "carol.williams@ucalgary.ca",
+    "phone": "403-111-0003"
+  },
+  {
+    "user_id": "uofc004",
+    "first_name": "David",
+    "last_name": "Brown",
+    "email": "david.brown@ucalgary.ca",
+    "phone": "403-111-0004"
+  },
+  {
+    "user_id": "uofc005",
+    "first_name": "Eve",
+    "last_name": "Jones",
+    "email": "eve.jones@ucalgary.ca",
+    "phone": "403-111-0005"
+  },
+  {
+    "user_id": "uofc006",
+    "first_name": "Frank",
+    "last_name": "Garcia",
+    "email": "frank.garcia@ucalgary.ca",
+    "phone": "403-111-0006"
+  },
+  {
+    "user_id": "uofc007",
+    "first_name": "Grace",
+    "last_name": "Miller",
+    "email": "grace.miller@ucalgary.ca",
+    "phone": "403-111-0007"
+  },
+  {
+    "user_id": "uofc008",
+    "first_name": "Henry",
+    "last_name": "Davis",
+    "email": "henry.davis@ucalgary.ca",
+    "phone": "403-111-0008"
+  },
+  {
+    "user_id": "uofc009",
+    "first_name": "Ivy",
+    "last_name": "Martinez",
+    "email": "ivy.martinez@ucalgary.ca",
+    "phone": "403-111-0009"
+  },
+  {
+    "user_id": "uofc010",
+    "first_name": "Jack",
+    "last_name": "Lee",
+    "email": "jack.lee@ucalgary.ca",
+    "phone": "403-111-0010"
+  }
+]
