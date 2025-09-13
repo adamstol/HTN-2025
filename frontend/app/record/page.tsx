@@ -1,99 +1,169 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
-import LiveSuggestions from "@/components/LiveSuggestions";
-import { useRollingTranscript } from "@/hooks/useRollingTranscript";
 
-function useRecorder() {
-  const mediaRef = useRef<MediaRecorder | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const chunksRef = useRef<BlobPart[]>([]);
-
-  const start = async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const rec = new MediaRecorder(stream);
-    chunksRef.current = [];
-    rec.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
-    rec.onstop = () => {
-      const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-      setAudioUrl(URL.createObjectURL(blob));
-    };
-    rec.start();
-    mediaRef.current = rec;
-    setIsRecording(true);
-  };
-  const stop = () => { mediaRef.current?.stop(); setIsRecording(false); };
-  const reset = () => { setAudioUrl(null); chunksRef.current = []; };
-  return { start, stop, reset, isRecording, audioUrl };
-}
+import { useState, useRef } from 'react';
+import { Users, Sparkles, MoveUpRight, Mic, Square } from 'lucide-react';
+import ConversationHistory from '@/components/ConversationHistory';
 
 export default function RecordPage() {
-  const { addText, windowText, clear } = useRollingTranscript();
-  const { start, stop, reset, isRecording, audioUrl } = useRecorder();
-  const [fullTranscript, setFullTranscript] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [showConversationHistory, setShowConversationHistory] = useState(false);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const conversationHistoryRef = useRef<HTMLDivElement>(null);
 
-  // fake interim transcript typing for demo if USE_MOCK_STT is true
-  useEffect(() => {
-    if (!isRecording) return;
-    if (process.env.USE_MOCK_STT === "true" || process.env.NEXT_PUBLIC_USE_MOCK_STT === "true") {
-      const samples = [
-        "We met at the hackathon and talked about graph databases.",
-        "They love climbing and machine learning, especially embeddings.",
-        "We planned to sync next week about a new project.",
-      ];
-      let i = 0;
-      const id = setInterval(() => { const t = samples[i % samples.length]; addText(t); setFullTranscript((p) => p + (p ? " " : "") + t); i++; }, 2500);
-      return () => clearInterval(id);
-    }
-  }, [isRecording, addText]);
-
-  const handleFinish = async () => {
-    setIsSubmitting(true);
+  const startRecording = async () => {
     try {
-      const res = await fetch("/api/stt/finish", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ audioUrl, fullTranscript }) });
-      const data = await res.json();
-      if (data?.transcript) {
-        setFullTranscript(data.transcript);
-      }
-    } finally { setIsSubmitting(false); }
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaStreamRef.current = stream;
+      
+      const recorder = new MediaRecorder(stream);
+      setMediaRecorder(recorder);
+      
+      // Clear previous audio chunks
+      audioChunksRef.current = [];
+      
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+      
+      recorder.onstop = () => {
+        // Create MP3 blob from collected chunks
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/mp3' });
+        setAudioBlob(audioBlob);
+        
+        // Create download URL for the MP3
+        const audioUrl = URL.createObjectURL(audioBlob);
+        console.log('Recording completed. Audio blob created:', audioBlob);
+        console.log('Download URL:', audioUrl);
+        
+        // Clean up
+        stream.getTracks().forEach(track => track.stop());
+        setIsRecording(false);
+      };
+      
+      recorder.start();
+      setIsRecording(true);
+    } catch (error) {
+      console.error('Error accessing microphone:', error);
+      alert('Unable to access microphone. Please check permissions.');
+    }
   };
 
-  const onUseSuggestion = async (s: { id: string; text: string }) => {
-    addText(s.text);
+  const stopRecording = () => {
+    if (mediaRecorder && isRecording) {
+      mediaRecorder.stop();
+    }
+  };
+
+  const handleRecordClick = () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  };
+
+  const handleViewConversationHistory = () => {
+    setShowConversationHistory(true);
+    // Auto-scroll to conversation history section
+    setTimeout(() => {
+      conversationHistoryRef.current?.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }, 100);
   };
 
   return (
-    <div className="mx-auto max-w-3xl p-6 space-y-6">
-      <h1 className="text-2xl font-semibold">Record Conversation</h1>
-
-      <div className="flex items-center gap-3">
-        {!isRecording ? (
-          <button className="rounded bg-green-600 px-3 py-2 text-white" onClick={start}>Start</button>
-        ) : (
-          <button className="rounded bg-red-600 px-3 py-2 text-white" onClick={stop}>Stop</button>
-        )}
-        <button className="rounded border px-3 py-2" onClick={() => { reset(); clear(); setFullTranscript(""); }}>Reset</button>
-        <button className="rounded border px-3 py-2" disabled={isSubmitting} onClick={handleFinish}>{isSubmitting ? "Processing…" : "Finish & Transcribe"}</button>
-      </div>
-
-      {audioUrl && (
-        <audio controls src={audioUrl} className="w-full" />
-      )}
-
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        <div className="space-y-2">
-          <div className="text-sm font-medium">Transcript (rolling window)</div>
-          <div className="min-h-24 rounded border p-3 text-sm whitespace-pre-wrap">{windowText || "(waiting for audio or input)"}</div>
-          <div className="text-xs text-muted-foreground">Only last N seconds are used for suggestions.</div>
+    <div className="min-h-screen bg-gradient-to-b from-[#343D40] to-[#131519] text-white flex flex-col">
+      {/* Header Section */}
+      <div className="flex-shrink-0 pt-16 pb-8 px-6">
+        <div className="text-center">
+          <h1 className="text-xl font-normal text-gray-200" style={{fontFamily: 'Simonetta, serif'}}>
+            Hi, how can I help you today?
+          </h1>
         </div>
-        <LiveSuggestions transcriptWindow={windowText} onUse={onUseSuggestion} />
       </div>
 
-      <div className="space-y-2">
-        <div className="text-sm font-medium">Full Transcript</div>
-        <textarea value={fullTranscript} onChange={(e) => setFullTranscript(e.target.value)} className="w-full min-h-40 rounded border p-3 text-sm" placeholder="Transcribed content will appear here" />
+      {/* Main Content - Circle Section */}
+      <div className="flex-1 flex items-center justify-center px-6">
+        <div className="flex flex-col items-center">
+          {/* Record Circle */}
+          <button 
+            onClick={handleRecordClick}
+            className={`w-32 h-32 rounded-full flex items-center justify-center mb-6 transition-colors cursor-pointer hover:opacity-80 ${
+              isRecording ? 'bg-gray-500' : 'bg-gray-300'
+            }`}
+          >
+            {isRecording ? (
+              <Square className="w-8 h-8 text-white" />
+            ) : (
+              <Mic className="w-8 h-8 text-gray-700" />
+            )}
+          </button>
+          
+          {/* Tap to record text */}
+          <div className="text-center">
+            <p className="text-gray-300 text-lg" style={{fontFamily: 'Simonetta, serif'}}>
+              {isRecording ? 'Recording...' : 'Tap to record...'}
+            </p>
+          </div>
+        </div>
       </div>
+
+      {/* Bottom Section - Two Side-by-Side Cards */}
+      <div className="flex-shrink-0 pb-8 px-6">
+        <div className="space-y-4">
+          {/* Two Cards Side by Side */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* Access your network card */}
+            <div className="bg-slate-700 rounded-2xl p-4 h-24 flex flex-col cursor-pointer hover:bg-slate-600 transition-colors">
+              <div className="w-6 h-6 flex items-center justify-center mb-2">
+                <Users className="w-5 h-5 text-gray-300" />
+              </div>
+              <div className="flex items-center justify-between flex-1">
+                <p className="text-white text-xs ">Access your network</p>
+                <MoveUpRight className="w-3 h-3 text-gray-400" />
+              </div>
+            </div>
+
+            {/* AI Chatbot card */}
+            <div className="bg-slate-700 rounded-2xl p-4 h-24 flex flex-col cursor-pointer hover:bg-slate-600 transition-colors">
+              <div className="w-6 h-6 flex items-center justify-center mb-2">
+                <Sparkles className="w-5 h-5 text-gray-300" />
+              </div>
+              <div className="flex items-center justify-between flex-1">
+                <p className="text-white text-xs">AI Chatbot</p>
+                <MoveUpRight className="w-3 h-3 text-gray-400" />
+              </div>
+            </div>
+          </div>
+
+          {/* View Conversation History */}
+          <div className="flex justify-center items-center pt-4">
+            <button 
+              onClick={handleViewConversationHistory}
+              className="text-gray-400 text-sm hover:text-gray-300 transition-colors flex items-center justify-center gap-2"
+            >
+              <span>View Conversation History</span>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Conversation History Section */}
+      {showConversationHistory && (
+        <div ref={conversationHistoryRef}>
+          <ConversationHistory />
+        </div>
+      )}
     </div>
   );
 }

@@ -29,10 +29,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Simonetta:ital,wght@0,400;0,900;1,400;1,900&display=swap" rel="stylesheet" />
+      </head>
       <Analytics />
       <Script src="https://cloud.umami.is/script.js" strategy="afterInteractive" data-website-id="81fcd805-b14a-4d2c-8186-332a9e0c7064"></Script>
       <body className={`${geistSans.className} antialiased min-h-screen`}>
-        <Header />
+        {/* <Header /> */}
         <Toaster />
         <ThemeProvider
           attribute="class"
