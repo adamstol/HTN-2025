@@ -44,7 +44,7 @@ function VerifyEmailContent() {
       <FloatingBlobs />
       <div className="text-center">
         <h1 className="text-4xl font-bold mb-6">
-          Waking up Ember🥱
+          Waking up 7 Degrees🥱
         </h1>
         <p className="text-muted-foreground mb-8">
           Can&apos;t wait to meet you!
