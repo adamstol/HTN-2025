@@ -6,6 +6,9 @@ import google.generativeai as genai
 from openai import OpenAI
 import tempfile
 import json
+import threading
+import time
+import requests
 
 # Load environment variables
 load_dotenv("../../config/.env", override=False)
@@ -43,6 +46,10 @@ else:
 @app.route("/")
 def home():
     return jsonify({"message": "HTN2025 Backend is running 🚀"})
+
+@app.route("/health")
+def health_check():
+    return jsonify({"status": "healthy", "timestamp": time.time()})
 
 
 @app.route("/transcribe", methods=["POST"])
@@ -192,5 +199,28 @@ Conversation:
         return jsonify({"error": str(e)}), 500
 
 
+def keep_alive():
+    """Send a request to the health endpoint every 5 minutes to keep the server active"""
+    def ping_server():
+        while True:
+            try:
+                time.sleep(300)  # Wait 5 minutes
+                # Get the server URL from environment or use localhost
+                server_url = os.environ.get("RENDER_EXTERNAL_URL", "http://localhost:5000")
+                response = requests.get(f"{server_url}/health", timeout=10)
+                print(f"Keep-alive ping: {response.status_code}")
+            except Exception as e:
+                print(f"Keep-alive ping failed: {e}")
+    
+    # Start the ping thread
+    ping_thread = threading.Thread(target=ping_server, daemon=True)
+    ping_thread.start()
+
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    import os
+    port = int(os.environ.get("PORT", 5000))
+    
+    # Start keep-alive mechanism
+    keep_alive()
+    
+    app.run(debug=False, host="0.0.0.0", port=port)
