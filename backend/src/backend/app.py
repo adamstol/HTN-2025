@@ -58,9 +58,6 @@ def transcribe_and_analyze():
         return jsonify({"error": "No audio file uploaded"}), 400
 
     # Check if API keys are available
-    if not google_api_key:
-        return jsonify({"error": "Google API key not configured. Please set GOOGLE_API_KEY environment variable."}), 500
-    
     if not openai_api_key or client is None:
         return jsonify({"error": "OpenAI API key not configured. Please set OPENAI_API_KEY environment variable."}), 500
 
@@ -72,128 +69,86 @@ def transcribe_and_analyze():
             audio_file.save(temp.name)
             temp_path = temp.name
 
-        # 1️⃣ Transcribe with Whisper (verbose JSON for timestamps)
+        # Transcribe with Whisper (verbose JSON for timestamps)
         transcription = client.audio.transcriptions.create(
             model="whisper-1",
             file=open(temp_path, "rb"),
             response_format="verbose_json"
         )
 
+        # Single AI prompt to process everything
         segments = getattr(transcription, "segments", None)
-        if not segments:
-            conversation_list = [{"speaker": "Unknown", "text": transcription.text}]
+        if segments:
+            segment_text = "\n".join([f"[{s.start:.2f}-{s.end:.2f}] {s.text.strip()}" for s in segments])
         else:
-            # 2️⃣ Group nearby segments (<= 0.5s apart)
-            grouped_segments = []
-            current_group = {
-                "start": segments[0].start,
-                "end": segments[0].end,
-                "text": segments[0].text.strip()
-            }
+            segment_text = f"[0.00-0.00] {transcription.text}"
 
-            for seg in segments[1:]:
-                if seg.start - current_group["end"] <= 0.5:
-                    current_group["text"] += " " + seg.text.strip()
-                    current_group["end"] = seg.end
-                else:
-                    grouped_segments.append(current_group)
-                    current_group = {"start": seg.start, "end": seg.end, "text": seg.text.strip()}
-            grouped_segments.append(current_group)
+        unified_prompt = f"""
+You are an AI assistant that processes audio transcripts. Given the timestamped segments below, you must return a JSON object with exactly three fields: transcript, facts, and summary.
 
-            # 3️⃣ Let GPT separate speakers with names if possible
-            segment_text = "\n".join(
-                [f"[{g['start']:.2f}-{g['end']:.2f}] {g['text']}" for g in grouped_segments]
-            )
-            prompt = f"""
-You are separating conversation segments by speaker.
-Rules:
-- There are only two speakers.
-- If someone says another person’s name (e.g., "Hi Ibrahim"), that name belongs to the *other* speaker.
-- If someone talks about their own items (e.g., "I got my shoes from Puma"), that statement belongs to them, not the person they named.
-- Keep labels consistent across the conversation.
-- If no names are mentioned, label speakers as "Speaker 1" and "Speaker 2".
-- Output ONLY valid JSON in this format:
+REQUIREMENTS:
+1. transcript: Array of conversation turns with speaker identification (only "speaker" and "text" fields)
+2. facts: Key facts extracted for each speaker separately
+3. summary: Concise summary of key points and outcomes
 
-[
-  {{"speaker": "Speaker 1", "text": "First utterance"}},
-  {{"speaker": "Speaker 2", "text": "Second utterance"}}
-]
+RULES:
+- There are only two speakers maximum
+- If someone says another person's name, that name belongs to the OTHER speaker
+- Group segments that are close together (< 0.5s apart)
+- Merge consecutive utterances from the same speaker
+- Extract only explicit, concrete facts directly stated by each person
+- Do not include questions, opinions, or interpretations in facts
+- Return ONLY valid JSON, no other text
 
-Segments:
+SEGMENTS:
 {segment_text}
+
+OUTPUT FORMAT (return ONLY this JSON structure):
+{{
+  "transcript": [
+    {{"speaker": "Speaker 1", "text": "utterance"}},
+    {{"speaker": "Speaker 2", "text": "response"}}
+  ],
+  "facts": {{
+    "Speaker 1": [
+      "Concrete fact 1 about Speaker 1",
+      "Concrete fact 2 about Speaker 1"
+    ],
+    "Speaker 2": [
+      "Concrete fact 1 about Speaker 2",
+      "Concrete fact 2 about Speaker 2"
+    ]
+  }},
+  "summary": "Brief summary of the conversation including main topics, decisions made, and key information exchanged."
+}}
 """
 
-            response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0
-            )
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": unified_prompt}],
+            temperature=0
+        )
 
-            conversation_json_str = response.choices[0].message.content.strip()
-
-            try:
-                conversation_list = json.loads(conversation_json_str)
-            except json.JSONDecodeError:
-                # Fallback: return plain text if JSON is malformed
-                conversation_list = [{"speaker": "Unknown", "text": transcription.text}]
-
-            # 4️⃣ Merge consecutive lines from same speaker
-            merged_conversation = []
-            for seg in conversation_list:
-                if merged_conversation and merged_conversation[-1]['speaker'] == seg['speaker']:
-                    merged_conversation[-1]['text'] += " " + seg['text']
-                else:
-                    merged_conversation.append(seg)
-            conversation_list = merged_conversation
-
-        # 5️⃣ Build conversation string for analysis
-        text_input = " ".join(f"{c['speaker']}: {c['text']}" for c in conversation_list)
-
-        # 6️⃣ Run Gemini analysis
-        model = genai.GenerativeModel("gemini-2.5-flash")
-        analysis_prompt = f"""
-Extract ONLY explicit, concrete facts directly stated by either person in the following conversation. 
-- Do not include questions, guesses, or compliments.
-- Do not include traits, opinions, or interpretations.
-- Rewrite each fact as a standalone statement with full context.
-- If either person refers to something vaguely (e.g., "I just got it yesterday"), expand it with context.
-- Output ONLY in the format 'Person: Fact'.
-
-Conversation:
-{text_input}
-"""
+        result_json = response.choices[0].message.content.strip()
+        
         try:
-            analysis_response = model.generate_content(analysis_prompt)
+            result = json.loads(result_json)
             
-            # Check if response has valid content
-            if analysis_response and hasattr(analysis_response, 'candidates') and analysis_response.candidates:
-                candidate = analysis_response.candidates[0]
-                if hasattr(candidate, 'content') and candidate.content and candidate.content.parts:
-                    raw_analysis = analysis_response.text.strip()
-                else:
-                    print(f"Gemini response has no valid content. Finish reason: {getattr(candidate, 'finish_reason', 'unknown')}")
-                    raw_analysis = "No analysis available - content filtered or blocked"
-            else:
-                print("Gemini response is empty or invalid")
-                raw_analysis = "No analysis available - empty response"
-        except Exception as e:
-            print(f"Gemini API error: {str(e)}")
-            raw_analysis = f"Analysis failed: {str(e)}"
-
-        speaker_facts = {}
-        for line in raw_analysis.splitlines():
-            if ":" in line:
-                speaker, fact = line.split(":", 1)
-                speaker = speaker.strip()
-                fact = fact.strip()
-                if speaker not in speaker_facts:
-                    speaker_facts[speaker] = []
-                speaker_facts[speaker].append(fact)
-
-        return jsonify({
-            "conversation": conversation_list,
-            "analysis": speaker_facts or {"note": "No explicit facts extracted"}
-        })
+            # Validate required fields
+            if not all(key in result for key in ["transcript", "facts", "summary"]):
+                raise ValueError("Missing required fields")
+                
+            return jsonify(result)
+            
+        except (json.JSONDecodeError, ValueError) as e:
+            # Fallback response
+            return jsonify({
+                "transcript": [{"speaker": "Unknown", "text": transcription.text}],
+                "facts": {
+                    "Unknown": ["No facts could be extracted"]
+                },
+                "summary": "Transcription completed but detailed analysis failed."
+            })
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
