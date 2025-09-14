@@ -100,6 +100,7 @@ def transcribe_and_analyze():
 You are an AI assistant that processes audio transcripts. Given the timestamped segments below, you must return a JSON object with exactly three fields: transcript, facts, and summary.
 
 REQUIREMENTS:
+0. Try to deduce the speakers' names from the transcript
 1. transcript: Array of conversation turns with speaker identification (only "speaker" and "text" fields)
 2. facts: Key facts extracted for each speaker separately
 3. summary: Concise summary of key points and outcomes
@@ -119,15 +120,15 @@ SEGMENTS:
 OUTPUT FORMAT (return ONLY this JSON structure):
 {{
   "transcript": [
-    {{"speaker": "Speaker 1", "text": "utterance"}},
-    {{"speaker": "Speaker 2", "text": "response"}}
+    {{"speaker": "<Speaker 1>", "text": "utterance"}},
+    {{"speaker": "<Speaker 2>", "text": "response"}}
   ],
   "facts": {{
-    "Speaker 1": [
+    "<Speaker 1>": [
       "Concrete fact 1 about Speaker 1",
       "Concrete fact 2 about Speaker 1"
     ],
-    "Speaker 2": [
+    "<Speaker 2>": [
       "Concrete fact 1 about Speaker 2",
       "Concrete fact 2 about Speaker 2"
     ]
