@@ -33,7 +33,7 @@ export default function RecordPage() {
         }
       };
 
-      recorder.onstop = () => {
+      recorder.onstop = async () => {
         // Create MP3 blob from collected chunks
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/mp3' });
         setAudioBlob(audioBlob);
