@@ -44,7 +44,7 @@ export default function TestTranscriptPage() {
   return (
     <div className="container mx-auto p-8 max-w-4xl">
       <h1 className="text-3xl font-bold mb-8">Test Transcript API</h1>
-      
+
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
         <h2 className="text-xl font-semibold mb-4">Upload Audio File</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -60,13 +60,13 @@ export default function TestTranscriptPage() {
               className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
             />
           </div>
-          
+
           {file && (
             <div className="text-sm text-gray-600">
               Selected: {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
             </div>
           )}
-          
+
           <button
             type="submit"
             disabled={!file || loading}
@@ -86,20 +86,20 @@ export default function TestTranscriptPage() {
       {result && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-6">
           <h2 className="text-xl font-semibold mb-4 text-green-800">Results</h2>
-          
+
           <div className="space-y-4">
             <div>
               <h3 className="font-semibold text-gray-700">Status:</h3>
               <p className="text-green-600">✅ {result.ok ? "Success" : "Failed"}</p>
             </div>
-            
+
             {result.conversation_id && (
               <div>
                 <h3 className="font-semibold text-gray-700">Conversation ID:</h3>
                 <p className="font-mono text-sm bg-gray-100 p-2 rounded">{result.conversation_id}</p>
               </div>
             )}
-            
+
             {result.conversation && (
               <div>
                 <h3 className="font-semibold text-gray-700">Conversation:</h3>
@@ -113,7 +113,7 @@ export default function TestTranscriptPage() {
                 </div>
               </div>
             )}
-            
+
             {result.analysis && (
               <div>
                 <h3 className="font-semibold text-gray-700">Analysis:</h3>
@@ -124,7 +124,7 @@ export default function TestTranscriptPage() {
                 </div>
               </div>
             )}
-            
+
             <details className="mt-4">
               <summary className="cursor-pointer font-semibold text-gray-700">Raw Response (Debug)</summary>
               <div className="bg-gray-100 p-4 rounded mt-2">
@@ -136,13 +136,13 @@ export default function TestTranscriptPage() {
           </div>
         </div>
       )}
-      
+
       <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
         <h3 className="font-semibold text-blue-800 mb-2">Testing Instructions:</h3>
         <ol className="list-decimal list-inside text-sm text-blue-700 space-y-1">
           <li>Make sure your backend server is running on <code>http://localhost:5000</code></li>
           <li>Upload an audio file (mp3, wav, m4a, etc.)</li>
-          <li>Click "Transcribe & Analyze" to test the integration</li>
+          <li>Click &quot;Transcribe & Analyze&quot; to test the integration</li>
           <li>Check the browser console for detailed logs</li>
           <li>Verify the conversation is saved to your Supabase database</li>
         </ol>

@@ -1,28 +1,29 @@
 import { createClient } from "@/lib/supabase/server";
 
-export default async function ConversationPage({ params }: { params: { id: string } }) {
+export default async function ConversationPage({ params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient();
+  const { id } = await params;
   const { data: convo } = await supabase
     .from("conversations")
     .select("id, started_at, ended_at, raw_transcript, stt_provider")
-    .eq("id", params.id)
+    .eq("id", id)
     .single();
 
   const { data: entities } = await supabase
     .from("entities")
     .select("id, kind, name, salience")
-    .eq("conversation_id", params.id)
+    .eq("conversation_id", id)
     .order("salience", { ascending: false });
 
   const { data: relations } = await supabase
     .from("relations")
     .select("id, src_entity_id, dst_entity_id, type, weight")
-    .eq("conversation_id", params.id);
+    .eq("conversation_id", id);
 
   const { data: memories } = await supabase
     .from("memories")
     .select("id, title, body, tags, due_at")
-    .eq("source_conversation_id", params.id);
+    .eq("source_conversation_id", id);
 
   return (
     <div className="mx-auto max-w-4xl p-6 space-y-6">
@@ -75,4 +76,3 @@ export default async function ConversationPage({ params }: { params: { id: strin
     </div>
   );
 }
-

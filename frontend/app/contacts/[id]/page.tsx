@@ -1,9 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 
-export default async function ContactPage({ params }: { params: { id: string } }) {
+export default async function ContactPage({ params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient();
-  const contactId = params.id;
+  const contactId = (await params).id;
 
   const { data: contact } = await supabase.from("contacts").select("*, conversations:conversations(id, started_at, ended_at)").eq("id", contactId).single();
 
@@ -37,4 +37,3 @@ export default async function ContactPage({ params }: { params: { id: string } }
     </div>
   );
 }
-

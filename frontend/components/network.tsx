@@ -15,7 +15,7 @@ interface Connection {
     profilePicture: string;
 }
 
-export const avatarNames = [
+const avatarNames = [
     "Brian",
     "Emery",
     "Wyatt",
@@ -38,7 +38,7 @@ export const avatarNames = [
     "Eden",
 ] as const;
 
-export default function NetworkPage({ className = "", onScrollBack }: NetworkProps) {
+export function NetworkPage({ className = "", onScrollBack }: NetworkProps) {
     // Generate random connections with avatars
     const generateRandomConnections = () => {
         const connectionNames = ['Alex Johnson', 'Sarah Chen', 'Michael Rodriguez', 'Emma Wilson', 'David Kim'];
