@@ -21,6 +21,7 @@ export async function createConversation() {
     // Non-fatal; fall through to create
   }
 
+
   if (existing?.id && existing?.invite_code) {
     const url = `${process.env.APP_URL}/c/${existing.id}?code=${existing.invite_code}`;
     return { id: existing.id as string, url };
