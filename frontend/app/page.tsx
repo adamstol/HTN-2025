@@ -77,20 +77,20 @@ const Index = () => {
         </div>
 
         {/* Technology Stack */}
-        <div className="glass-card p-8 rounded-3xl max-w-4xl mx-auto mb-12">
-          <h3 className="text-2xl font-semibold text-foreground mb-6">Powered by Advanced AI</h3>
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="flex items-center space-x-3">
-              <div className="w-2 h-2 bg-primary rounded-full"></div>
-              <span className="text-muted-foreground">OpenAI Whisper Transcription</span>
+        <div className="glass-card p-6 rounded-2xl max-w-sm mx-auto mb-8">
+          <h3 className="text-lg font-semibold text-foreground mb-4 text-center">Powered by Advanced AI</h3>
+          <div className="space-y-1">
+            <div className="flex items-center space-x-3 py-1">
+              <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0"></div>
+              <span className="text-muted-foreground text-sm">OpenAI Whisper Transcription</span>
             </div>
-            <div className="flex items-center space-x-3">
-              <div className="w-2 h-2 bg-primary rounded-full"></div>
-              <span className="text-muted-foreground">GPT Speaker Identification</span>
+            <div className="flex items-center space-x-3 py-1">
+              <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0"></div>
+              <span className="text-muted-foreground text-sm">GPT Speaker Identification</span>
             </div>
-            <div className="flex items-center space-x-3">
-              <div className="w-2 h-2 bg-primary rounded-full"></div>
-              <span className="text-muted-foreground">Gemini AI Analysis</span>
+            <div className="flex items-center space-x-3 py-1">
+              <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0"></div>
+              <span className="text-muted-foreground text-sm">Gemini AI Analysis</span>
             </div>
           </div>
         </div>
