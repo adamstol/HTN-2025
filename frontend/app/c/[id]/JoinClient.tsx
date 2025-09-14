@@ -58,7 +58,7 @@ export default function JoinClient({ conversationId, inviteCode }: JoinClientPro
         <div className="text-center space-y-4">
           <h1 className="text-3xl font-bold">Join Conversation</h1>
           <p className="text-gray-300">
-            You've been invited to join a conversation. Sign in to continue.
+            You&quot;ve been invited to join a conversation. Sign in to continue.
           </p>
         </div>
 
@@ -106,7 +106,7 @@ export default function JoinClient({ conversationId, inviteCode }: JoinClientPro
         {/* Info */}
         <div className="text-center text-sm text-gray-400">
           <p>
-            We'll send you a secure sign-in link. After signing in, you'll automatically join the conversation.
+            We&apos;ll send you a secure sign-in link. After signing in, you&apos;ll automatically join the conversation.
           </p>
         </div>
       </div>

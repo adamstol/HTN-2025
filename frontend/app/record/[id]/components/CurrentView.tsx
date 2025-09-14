@@ -32,12 +32,12 @@ export default function CurrentView({ conversationId }: CurrentViewProps) {
       // Check localStorage for stored start time
       const storageKey = `conversation_${conversationId}_start_time`;
       const storedTime = localStorage.getItem(storageKey);
-      
+
       if (storedTime) {
         const parsedTime = parseInt(storedTime);
         setStoredStartTime(parsedTime);
         setStartTime(parsedTime);
-        
+
         // Calculate current duration
         const currentDuration = Math.floor((Date.now() - parsedTime) / 1000);
         setDuration(currentDuration);
@@ -53,16 +53,16 @@ export default function CurrentView({ conversationId }: CurrentViewProps) {
 
         if (!error && data) {
           setStatus(data.status);
-          
+
           if (data.started_at) {
             const dbStartTime = new Date(data.started_at).getTime();
-            
+
             // If no stored time or db time is different, use db time
             if (!storedTime || Math.abs(dbStartTime - (storedTime ? parseInt(storedTime) : 0)) > 5000) {
               setStartTime(dbStartTime);
               setStoredStartTime(dbStartTime);
               localStorage.setItem(storageKey, dbStartTime.toString());
-              
+
               // Recalculate duration with db time
               const currentDuration = Math.floor((Date.now() - dbStartTime) / 1000);
               setDuration(currentDuration);
@@ -188,7 +188,7 @@ export default function CurrentView({ conversationId }: CurrentViewProps) {
     const interval = setInterval(() => {
       const newDuration = Math.floor((Date.now() - startTime) / 1000);
       setDuration(newDuration);
-      
+
       // Store current duration in localStorage for persistence
       localStorage.setItem(`conversation_${conversationId}_duration`, newDuration.toString());
     }, 1000);
@@ -247,7 +247,9 @@ export default function CurrentView({ conversationId }: CurrentViewProps) {
           .update({
             status: 'ended',
             ended_at: new Date().toISOString(),
-
+            // transcript: result.transcript,
+            summary: result.summary,
+            // facts: result.facts
             // Note: Based on schema, there's no transcript field, so we store in location for now
           })
           .eq('id', conversationId);

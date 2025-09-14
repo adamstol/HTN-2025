@@ -6,7 +6,6 @@ import users from "./mock_users.json";
 
 const API_KEY = process.env.ZEP_API_KEY || process.env.NEXT_PUBLIC_ZEP_API_KEY;
 
-console.log("API_KEY", API_KEY);
 export const client = new ZepClient({
   apiKey: API_KEY,
 });

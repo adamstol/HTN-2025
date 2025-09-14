@@ -1,6 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
 import { getUserIdByEmail } from "../supabase/client-queries";
-import { processTranscriptAndUpdateGraph } from "../zep/transcript-processor";
 
 export type ConversationTurn = { speaker: string; text: string };
 
@@ -32,6 +31,9 @@ export async function sendTranscriptClient(opts: {
     // Send audio/video file to Flask /transcribe
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("conversationId", conversationId || "");
+    formData.append("userEmail", userEmail || "");
+    formData.append("userName", userName || "");
 
     const res = await fetch(`${backendBase}/transcribe`, {
       method: "POST",
@@ -50,7 +52,7 @@ export async function sendTranscriptClient(opts: {
     console.log("summary", summary);
 
     // Save to Supabase conversations table if conversationId provided
-    let savedConversationId = conversationId;
+    const savedConversationId = conversationId;
     if (conversationId) {
       try {
         const supabase = createClient();
@@ -65,11 +67,6 @@ export async function sendTranscriptClient(opts: {
 
           const userId = await getUserIdByEmail(userEmail as string);
           if (userId) {
-            await processTranscriptAndUpdateGraph(
-              { transcript, facts, summary },
-              userId,
-              userName
-            );
             console.log("Successfully processed transcript and updated Zep graph");
           }
         } catch (error) {

@@ -11,11 +11,11 @@ interface RecordingInterfaceProps {
   conversationStatus: string;
 }
 
-export default function RecordingInterface({ 
-  conversationId, 
-  userId, 
-  isInitiator, 
-  conversationStatus 
+export default function RecordingInterface({
+  conversationId,
+  userId,
+  isInitiator,
+  conversationStatus
 }: RecordingInterfaceProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
@@ -28,28 +28,28 @@ export default function RecordingInterface({
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaStreamRef.current = stream;
-      
+
       const recorder = new MediaRecorder(stream);
       setMediaRecorder(recorder);
-      
+
       audioChunksRef.current = [];
-      
+
       recorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data);
         }
       };
-      
+
       recorder.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         setAudioBlob(audioBlob);
-        
+
         // Process the recording
         setProcessing(true);
         try {
-          const result = await sendTranscriptClient({ 
+          const result = await sendTranscriptClient({
             file: new File([audioBlob], 'recording.webm', { type: 'audio/webm' }),
-            contact_id: conversationId 
+            conversationId: conversationId
           });
           console.log('Transcript result:', result);
         } catch (error) {
@@ -57,12 +57,12 @@ export default function RecordingInterface({
         } finally {
           setProcessing(false);
         }
-        
+
         // Clean up
         stream.getTracks().forEach(track => track.stop());
         setIsRecording(false);
       };
-      
+
       recorder.start();
       setIsRecording(true);
     } catch (error) {
@@ -101,7 +101,7 @@ export default function RecordingInterface({
           </div>
           <div className="flex items-center space-x-2">
             <div className={`w-3 h-3 rounded-full ${
-              conversationStatus === 'active' ? 'bg-green-500' : 
+              conversationStatus === 'active' ? 'bg-green-500' :
               conversationStatus === 'pending' ? 'bg-yellow-500' : 'bg-gray-500'
             }`} />
             <span className="text-sm text-gray-300 capitalize">{conversationStatus}</span>
@@ -113,12 +113,12 @@ export default function RecordingInterface({
       <div className="flex-1 flex items-center justify-center px-6">
         <div className="flex flex-col items-center space-y-8">
           {/* Recording Button */}
-          <button 
+          <button
             onClick={handleRecordClick}
             disabled={processing}
             className={`w-32 h-32 rounded-full flex items-center justify-center transition-all duration-200 ${
-              isRecording 
-                ? 'bg-red-500 hover:bg-red-600 animate-pulse' 
+              isRecording
+                ? 'bg-red-500 hover:bg-red-600 animate-pulse'
                 : processing
                 ? 'bg-gray-500 cursor-not-allowed'
                 : 'bg-blue-500 hover:bg-blue-600'
@@ -132,16 +132,16 @@ export default function RecordingInterface({
               <Mic className="w-8 h-8 text-white" />
             )}
           </button>
-          
+
           {/* Status Text */}
           <div className="text-center space-y-2">
             <p className="text-xl font-medium">
               {processing ? 'Processing...' : isRecording ? 'Recording...' : 'Tap to Record'}
             </p>
             <p className="text-gray-400 text-sm">
-              {processing 
+              {processing
                 ? 'Transcribing and analyzing your conversation'
-                : isRecording 
+                : isRecording
                 ? 'Speak naturally, we\'ll capture everything'
                 : 'Start recording your conversation'
               }

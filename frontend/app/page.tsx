@@ -7,8 +7,6 @@ import { useEmailSignup } from "@/hooks/use-email-signup";
 import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-import WhatsAppButton from "@/components/WhatsAppButton";
-import { env } from "@/lib/constants";
 import { Mic } from "lucide-react";
 import Link from "next/link";
 

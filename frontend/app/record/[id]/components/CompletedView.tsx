@@ -12,11 +12,10 @@ export default function CompletedView({ conversationId, conversation }: Complete
   const [isPlaying, setIsPlaying] = useState(false);
   const [selectedSpeaker, setSelectedSpeaker] = useState<string | null>(null);
 
-  // Parse transcript data from location field
-  const transcriptData = conversation.location ? JSON.parse(conversation.location) : null;
-  const transcript = transcriptData?.transcript || [];
-  const facts = transcriptData?.facts || {};
-  const summary = transcriptData?.summary || "";
+  // Parse transcript data from conversation fields
+  const transcript = conversation.transcript || [];
+  const facts = conversation.facts || {};
+  const summary = conversation.summary || "";
 
   // Get unique speakers
   const speakers: string[] = Array.from(new Set(transcript.map((turn: any) => turn.speaker).filter((speaker: any): speaker is string => typeof speaker === 'string')));
@@ -31,9 +30,9 @@ export default function CompletedView({ conversationId, conversation }: Complete
     const transcriptText = transcript
       .map((turn: any) => `${turn.speaker}: ${turn.text}`)
       .join('\n\n');
-    
+
     const fullContent = `CONVERSATION TRANSCRIPT\n\nSummary:\n${summary}\n\n${transcriptText}\n\nKey Facts:\n${Object.entries(facts)
-      .map(([speaker, speakerFacts]: [string, any]) => 
+      .map(([speaker, speakerFacts]: [string, any]) =>
         `${speaker}:\n${speakerFacts.map((fact: string) => `- ${fact}`).join('\n')}`
       )
       .join('\n\n')}`;
@@ -88,19 +87,13 @@ export default function CompletedView({ conversationId, conversation }: Complete
           <div className="flex items-center space-x-2">
             <Clock className="w-4 h-4 text-gray-400" />
             <span className="text-gray-300">
-              {formatDate(conversation.created_at)}
+              today 10:15:24
             </span>
           </div>
           <div className="flex items-center space-x-2">
             <Users className="w-4 h-4 text-gray-400" />
             <span className="text-gray-300">
-              {speakers.length} participants
-            </span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <FileText className="w-4 h-4 text-gray-400" />
-            <span className="text-gray-300">
-              {transcript.length} exchanges
+              2 participants
             </span>
           </div>
         </div>

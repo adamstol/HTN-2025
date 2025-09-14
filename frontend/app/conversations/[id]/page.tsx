@@ -47,7 +47,7 @@ Alex: I'd love to! This could be a really impactful project.`,
         due_at: "2025-02-15"
       },
       {
-        id: "mem-2", 
+        id: "mem-2",
         title: "App concept discussion",
         body: "Discussed our university networking app with AI matching. Alex provided valuable insights on conversation analysis and user intent.",
         tags: ["app", "concept", "feedback"],
@@ -57,7 +57,7 @@ Alex: I'd love to! This could be a really impactful project.`,
   }
 };
 
-export default function ConversationPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ConversationPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const convo = mockConversationData[id as keyof typeof mockConversationData];
   const entities = convo?.entities || [];
