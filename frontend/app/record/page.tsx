@@ -8,7 +8,6 @@ export default function RecordPage() {
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
-  const [showConversationHistory, setShowConversationHistory] = useState(false);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const conversationHistoryRef = useRef<HTMLDivElement>(null);
@@ -68,103 +67,106 @@ export default function RecordPage() {
   };
 
   const handleViewConversationHistory = () => {
-    setShowConversationHistory(true);
-    // Auto-scroll to conversation history section
-    setTimeout(() => {
-      conversationHistoryRef.current?.scrollIntoView({ 
-        behavior: 'smooth',
-        block: 'start'
-      });
-    }, 100);
+    // Immediately scroll to conversation history section
+    conversationHistoryRef.current?.scrollIntoView({ 
+      behavior: 'smooth',
+      block: 'start'
+    });
+  };
+
+  const handleScrollBackComplete = () => {
+    // Scroll back to top completed
+    console.log('Scroll back completed');
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#343D40] to-[#131519] text-white flex flex-col">
-      {/* Header Section */}
-      <div className="flex-shrink-0 pt-16 pb-8 px-6">
-        <div className="text-center">
-          <h1 className="text-xl font-normal text-gray-200" style={{fontFamily: 'Simonetta, serif'}}>
-            Hi, how can I help you today?
-          </h1>
-        </div>
-      </div>
-
-      {/* Main Content - Circle Section */}
-      <div className="flex-1 flex items-center justify-center px-6">
-        <div className="flex flex-col items-center">
-          {/* Record Circle */}
-          <button 
-            onClick={handleRecordClick}
-            className={`w-32 h-32 rounded-full flex items-center justify-center mb-6 transition-colors cursor-pointer hover:opacity-80 ${
-              isRecording ? 'bg-gray-500' : 'bg-gray-300'
-            }`}
-          >
-            {isRecording ? (
-              <Square className="w-8 h-8 text-white" />
-            ) : (
-              <Mic className="w-8 h-8 text-gray-700" />
-            )}
-          </button>
-          
-          {/* Tap to record text */}
+    <>
+      {/* Record Page Section - Always 100vh */}
+      <div className="h-screen bg-gradient-to-b from-[#343D40] to-[#131519] text-white flex flex-col">
+        {/* Header Section */}
+        <div className="flex-shrink-0 pt-16 pb-8 px-6">
           <div className="text-center">
-            <p className="text-gray-300 text-lg" style={{fontFamily: 'Simonetta, serif'}}>
-              {isRecording ? 'Recording...' : 'Tap to record...'}
-            </p>
+            <h1 className="text-xl font-normal text-gray-200" style={{fontFamily: 'Simonetta, serif'}}>
+              Hi, how can I help you today?
+            </h1>
           </div>
         </div>
-      </div>
 
-      {/* Bottom Section - Two Side-by-Side Cards */}
-      <div className="flex-shrink-0 pb-8 px-6">
-        <div className="space-y-4">
-          {/* Two Cards Side by Side */}
-          <div className="grid grid-cols-2 gap-4">
-            {/* Access your network card */}
-            <div className="bg-slate-700 rounded-2xl p-4 h-24 flex flex-col cursor-pointer hover:bg-slate-600 transition-colors">
-              <div className="w-6 h-6 flex items-center justify-center mb-2">
-                <Users className="w-5 h-5 text-gray-300" />
-              </div>
-              <div className="flex items-center justify-between flex-1">
-                <p className="text-white text-xs ">Access your network</p>
-                <MoveUpRight className="w-3 h-3 text-gray-400" />
-              </div>
-            </div>
-
-            {/* AI Chatbot card */}
-            <div className="bg-slate-700 rounded-2xl p-4 h-24 flex flex-col cursor-pointer hover:bg-slate-600 transition-colors">
-              <div className="w-6 h-6 flex items-center justify-center mb-2">
-                <Sparkles className="w-5 h-5 text-gray-300" />
-              </div>
-              <div className="flex items-center justify-between flex-1">
-                <p className="text-white text-xs">AI Chatbot</p>
-                <MoveUpRight className="w-3 h-3 text-gray-400" />
-              </div>
-            </div>
-          </div>
-
-          {/* View Conversation History */}
-          <div className="flex justify-center items-center pt-4">
+        {/* Main Content - Circle Section */}
+        <div className="flex-1 flex items-center justify-center px-6">
+          <div className="flex flex-col items-center">
+            {/* Record Circle */}
             <button 
-              onClick={handleViewConversationHistory}
-              className="text-gray-400 text-sm hover:text-gray-300 transition-colors flex items-center justify-center gap-2"
+              onClick={handleRecordClick}
+              className={`w-32 h-32 rounded-full flex items-center justify-center mb-6 transition-colors cursor-pointer hover:opacity-80 ${
+                isRecording ? 'bg-gray-500' : 'bg-gray-300'
+              }`}
             >
-              <span>View Conversation History</span>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
+              {isRecording ? (
+                <Square className="w-8 h-8 text-white" />
+              ) : (
+                <Mic className="w-8 h-8 text-gray-700" />
+              )}
             </button>
+            
+            {/* Tap to record text */}
+            <div className="text-center">
+              <p className="text-gray-300 text-lg" style={{fontFamily: 'Simonetta, serif'}}>
+                {isRecording ? 'Recording...' : 'Tap to record...'}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Section - Two Side-by-Side Cards */}
+        <div className="flex-shrink-0 pb-8 px-6">
+          <div className="space-y-4">
+            {/* Two Cards Side by Side */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Access your network card */}
+              <div className="bg-slate-700 rounded-2xl p-4 h-24 flex flex-col cursor-pointer hover:bg-slate-600 transition-colors">
+                <div className="w-6 h-6 flex items-center justify-center mb-2">
+                  <Users className="w-5 h-5 text-gray-300" />
+                </div>
+                <div className="flex items-center justify-between flex-1">
+                  <p className="text-white text-xs ">Access network</p>
+                  <MoveUpRight className="w-3 h-3 text-gray-400" />
+                </div>
+              </div>
+
+              {/* AI Chatbot card */}
+              <div className="bg-slate-700 rounded-2xl p-4 h-24 flex flex-col cursor-pointer hover:bg-slate-600 transition-colors">
+                <div className="w-6 h-6 flex items-center justify-center mb-2">
+                  <Sparkles className="w-5 h-5 text-gray-300" />
+                </div>
+                <div className="flex items-center justify-between flex-1">
+                  <p className="text-white text-xs">AI Chatbot</p>
+                  <MoveUpRight className="w-3 h-3 text-gray-400" />
+                </div>
+              </div>
+            </div>
+
+            {/* View Conversation History */}
+            <div className="flex justify-center items-center pt-4">
+              <button 
+                onClick={handleViewConversationHistory}
+                className="text-gray-400 text-sm hover:text-gray-300 transition-colors flex items-center justify-center gap-2"
+              >
+                <span>View Conversation History</span>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Conversation History Section */}
-      {showConversationHistory && (
-        <div ref={conversationHistoryRef}>
-          <ConversationHistory />
-        </div>
-      )}
-    </div>
+      {/* Conversation History Section - Separate 100vh section */}
+      <div ref={conversationHistoryRef}>
+        <ConversationHistory onScrollBack={handleScrollBackComplete} />
+      </div>
+    </>
   );
 }
 
