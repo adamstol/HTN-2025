@@ -1,29 +1,68 @@
-import { createClient } from "@/lib/supabase/server";
+// Mock data for conversation details
+const mockConversationData = {
+  "conv-001": {
+    id: "conv-001",
+    started_at: "2025-01-15T14:30:00Z",
+    ended_at: "2025-01-15T15:15:00Z",
+    raw_transcript: `Alex: Hey! Thanks for meeting up for coffee. I've been really excited to chat about your project.
 
-export default async function ConversationPage({ params }: { params: Promise<{ id: string }> }) {
-  const supabase = await createClient();
+You: Of course! I'm glad we could find time. I've been working on this new app idea and I think you'd have some great insights.
+
+Alex: I'd love to hear about it. What's the core concept?
+
+You: It's essentially a networking app for university students, but with AI-powered matching based on shared interests and goals. The idea is to help students find study partners, project collaborators, or even just friends with similar academic interests.
+
+Alex: That sounds really interesting! How does the AI matching work?
+
+You: We're using a combination of profile data, conversation analysis, and behavioral patterns. The app would analyze conversations to understand what people are passionate about and match them accordingly.
+
+Alex: That's brilliant. I've been working on something similar in the ML space - specifically around natural language processing for understanding user intent.
+
+You: Really? That's perfect! We should definitely collaborate on this. Your expertise in NLP would be invaluable for the conversation analysis component.
+
+Alex: Absolutely! I'd love to contribute. When are you planning to start development?
+
+You: We're hoping to have a prototype ready for the next hackathon. Would you be interested in joining our team?
+
+Alex: I'd love to! This could be a really impactful project.`,
+    stt_provider: "OpenAI Whisper",
+    entities: [
+      { id: "ent-1", kind: "PERSON", name: "Alex Chen", salience: 0.95 },
+      { id: "ent-2", kind: "TECHNOLOGY", name: "AI", salience: 0.88 },
+      { id: "ent-3", kind: "TECHNOLOGY", name: "NLP", salience: 0.82 },
+      { id: "ent-4", kind: "ORGANIZATION", name: "university", salience: 0.75 },
+      { id: "ent-5", kind: "EVENT", name: "hackathon", salience: 0.70 }
+    ],
+    relations: [
+      { id: "rel-1", src_entity_id: "ent-1", dst_entity_id: "ent-2", type: "WORKING_ON", weight: 0.9 },
+      { id: "rel-2", src_entity_id: "ent-2", dst_entity_id: "ent-3", type: "USES", weight: 0.8 },
+      { id: "rel-3", src_entity_id: "ent-4", dst_entity_id: "ent-5", type: "HOSTS", weight: 0.7 }
+    ],
+    memories: [
+      {
+        id: "mem-1",
+        title: "Potential collaboration with Alex Chen",
+        body: "Alex is working on NLP for user intent understanding. Perfect match for our AI-powered networking app. He's interested in joining our hackathon team.",
+        tags: ["collaboration", "NLP", "hackathon", "networking"],
+        due_at: "2025-02-15"
+      },
+      {
+        id: "mem-2", 
+        title: "App concept discussion",
+        body: "Discussed our university networking app with AI matching. Alex provided valuable insights on conversation analysis and user intent.",
+        tags: ["app", "concept", "feedback"],
+        due_at: null
+      }
+    ]
+  }
+};
+
+export default function ConversationPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { data: convo } = await supabase
-    .from("conversations")
-    .select("id, started_at, ended_at, raw_transcript, stt_provider")
-    .eq("id", id)
-    .single();
-
-  const { data: entities } = await supabase
-    .from("entities")
-    .select("id, kind, name, salience")
-    .eq("conversation_id", id)
-    .order("salience", { ascending: false });
-
-  const { data: relations } = await supabase
-    .from("relations")
-    .select("id, src_entity_id, dst_entity_id, type, weight")
-    .eq("conversation_id", id);
-
-  const { data: memories } = await supabase
-    .from("memories")
-    .select("id, title, body, tags, due_at")
-    .eq("source_conversation_id", id);
+  const convo = mockConversationData[id as keyof typeof mockConversationData];
+  const entities = convo?.entities || [];
+  const relations = convo?.relations || [];
+  const memories = convo?.memories || [];
 
   return (
     <div className="mx-auto max-w-4xl p-6 space-y-6">
