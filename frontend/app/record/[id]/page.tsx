@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MoveUpLeft, Play, Pause } from "lucide-react";
+import {useRouter} from "next/navigation";
+import { MoveUpLeft, Play, Pause, Phone, MessageSquare } from "lucide-react";
 
 type Props = { params?: { id: string } };
 type ViewState = 'recording' | 'transcription';
@@ -9,11 +10,12 @@ type ViewState = 'recording' | 'transcription';
 export default function ConversationPage({ params }: Props) {
   const id = params?.id || "1";
   const [currentView, setCurrentView] = useState<ViewState>('recording');
+  const router = useRouter()
 
   return (
     <div className="h-screen bg-gradient-to-b from-[#343D40] to-[#131519] text-white flex flex-col">
       <button className="w-[30px] h-[30px] mt-5 ml-5 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-100/10 transition-colors">
-        <MoveUpLeft className="w-4 h-4 text-white" />
+        <MoveUpLeft onClick={() => router.back()} className="w-4 h-4 text-white" />
       </button>
 
       <div className="flex-1 flex flex-col items-center px-6">
@@ -22,43 +24,43 @@ export default function ConversationPage({ params }: Props) {
         </h1>
         <p className="text-[10px] text-gray-400 mb-4">13:10 - 15:10, Jan 2, 2025</p>
 
-        <div className="w-full max-w-md space-y-4">
-          <div className="bg-[#353E41] rounded-2xl p-4 flex items-center hover:bg-slate-600/60 transition-colors">
-            <p className="text-[10px]">
-              This is a summary of the convo. This is a summary of the convo. This is a summary of the convo. This is a
-              summary of the convo. This is a summary of the convo.
-              This is a summary of the convo. This is a summary of the convo. This is a summary of the convo. This is a
-              summary of the convo. This is a summary of the convo.
-              This is a summary of the convo. This is a summary of the convo. This is a summary of the convo. This is a
-              summary of the convo. This is a summary of the convo.
-            </p>
+        <div className="w-full max-w-md space-y-8">
+          <div className="space-y-2">
+            <div className="bg-[#353E41] rounded-2xl p-4 flex items-center hover:bg-slate-600/60 transition-colors">
+              <p className="text-[10px]">
+                This is a summary of the convo. This is a summary of the convo. This is a summary of the convo. This is a
+                summary of the convo. This is a summary of the convo.
+                This is a summary of the convo. This is a summary of the convo. This is a summary of the convo. This is a
+                summary of the convo. This is a summary of the convo.
+                This is a summary of the convo. This is a summary of the convo. This is a summary of the convo. This is a
+                summary of the convo. This is a summary of the convo.
+              </p>
+            </div>
           </div>
 
-          {/* Conditional Content Based on Current View */}
-          {currentView === 'recording' ? (
-            <AudioPlayer
-              src="/song.mp3"
-              className="bg-[#22272A] rounded-2xl p-4"
-            />
-          ) : (
-            <div className="bg-[#22272A] rounded-2xl p-8 h-[400px] flex items-center justify-center">
-              <h2 className="text-xl text-gray-200 text-center">
-                Transcription View
-              </h2>
-            </div>
-          )}
+          <div className="space-y-8">
+            {/* Conditional Content Based on Current View */}
+            {currentView === 'recording' ? (
+              <AudioPlayer
+                src="/song.mp3"
+                className="rounded-2xl p-4"
+              />
+            ) : (
+              <TranscriptionView />
+            )}
+          </div>
 
           {/* Toggle Buttons */}
-          <div className="flex gap-3 justify-center mt-6">
+          <div className="flex gap-4 justify-center">
             <button
               onClick={() => setCurrentView('recording')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-2xl transition-colors ${
+              className={`flex items-center gap-2 px-8 py-4 rounded-2xl transition-colors ${
                 currentView === 'recording'
                   ? 'bg-[#353E41] text-white'
                   : 'bg-transparent text-gray-400 hover:text-gray-200'
               }`}
             >
-              <div className="w-2 h-2 rounded-full bg-current" />
+              <Phone className="w-4 h-4" />
               <span className="text-sm">Recording</span>
             </button>
             
@@ -70,9 +72,7 @@ export default function ConversationPage({ params }: Props) {
                   : 'bg-transparent text-gray-400 hover:text-gray-200'
               }`}
             >
-              <div className="w-4 h-3 border border-current rounded-sm flex items-end justify-center pb-0.5">
-                <div className="w-1 h-1 bg-current rounded-full" />
-              </div>
+              <MessageSquare className="w-4 h-4" />
               <span className="text-sm">Transcription</span>
             </button>
           </div>
@@ -236,6 +236,75 @@ function AudioPlayer({ src, className = "" }: { src: string; className?: string 
   );
 }
 
+function TranscriptionView({ className = "" }: { className?: string }) {
+    // Mock conversation data
+    const messages = [
+      {
+        id: 1,
+        speaker: "Person 1",
+        text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu. In enim justo, rhoncus ut, imperdiet a, venenatis vitae, justo. Nullam dictum felis eu pede mollis pretium.",
+        isCurrentUser: false,
+        avatar: "bg-gradient-to-br from-pink-500 to-blue-600"
+      },
+      {
+        id: 2,
+        speaker: "Person 2",
+        text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis.",
+        isCurrentUser: true,
+        avatar: "bg-gradient-to-br from-green-500 to-teal-600"
+      },
+      {
+        id: 3,
+        speaker: "Person 1", 
+        text: "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam.",
+        isCurrentUser: false,
+        avatar: "bg-gradient-to-br from-pink-500 to-blue-600"
+      },
+      {
+        id: 4,
+        speaker: "Person 2",
+        text: "At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident.",
+        isCurrentUser: true,
+        avatar: "bg-gradient-to-br from-green-500 to-teal-600"
+      }
+    ];
+  
+    return (
+      <div className={`${className} h-[400px] overflow-y-auto`}>
+        <div className="space-y-4 p-4">
+          {messages.map((message) => (
+            <div
+              key={message.id}
+              className={`flex gap-3 ${
+                message.isCurrentUser ? 'flex-row-reverse' : 'flex-row'
+              }`}
+            >
+              {/* Avatar */}
+              <div className={`w-8 h-8 rounded-full flex-shrink-0 ${message.avatar}`} />
+              
+              {/* Message Content */}
+              <div
+                className={`max-w-[70%] ${
+                  message.isCurrentUser ? 'text-right' : 'text-left'
+                }`}
+              >
+                <div
+                  className={`inline-block p-3 rounded-2xl text-[8px] leading-relaxed ${
+                    message.isCurrentUser
+                      ? 'bg-white/30 text-white rounded-br-md'
+                      : 'bg-[#353E41] text-white rounded-bl-md'
+                  }`}
+                >
+                  "{message.text}"
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
 function fmt(seconds: number) {
   if (!Number.isFinite(seconds)) return "00:00";
   const s = Math.floor(seconds % 60);
@@ -244,3 +313,4 @@ function fmt(seconds: number) {
   const two = (n: number) => n.toString().padStart(2, "0");
   return h > 0 ? `${two(h)}:${two(m)}:${two(s)}` : `${two(m)}:${two(s)}`;
 }
+
