@@ -41,11 +41,11 @@ export default function SessionStartingView({ conversationId, conversation }: Se
           Your session is starting
         </p>
 
-        {/* Progress indicator */}
+        {/* Progress indicator
         <div className="flex items-center gap-2 text-gray-400 text-sm">
           <Loader2 className="w-4 h-4 animate-spin" />
           <span>Preparing recording environment...</span>
-        </div>
+        </div> */}
       </div>
 
       {/* Session details */}

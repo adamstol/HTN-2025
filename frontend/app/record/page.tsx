@@ -2,7 +2,7 @@ import ConversationHistory from "@/components/ConversationHistory";
 import { createConversation } from "./actions";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { ChevronUp, MoveUpRight, Phone, Users } from "lucide-react";
+import { ChevronLeft, ChevronUp, MoveUpRight, Phone, Users } from "lucide-react";
 
 export default async function RecordPage() {
   const supabase = await createClient();
@@ -21,10 +21,10 @@ export default async function RecordPage() {
       {/* Top section with conversation history */}
       <div className="flex-grow overflow-auto px-6 pb-4">
         <div className="flex justify-start mt-5 mb-4">
-          <button
+          {/* <button
             className="bg-white w-[30px] h-[30px] rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-100 transition-colors">
-            <ChevronUp className="w-5 h-5 text-black" />
-          </button>
+            <ChevronLeft className="w-5 h-5 text-black" />
+          </button> */}
         </div>
         
         <h1 className="text-2xl font-normal text-gray-200 mb-8 text-center" style={{ fontFamily: "Simonetta, serif" }}>

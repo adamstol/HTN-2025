@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ChevronLeft, MessageCircle, Phone, Video, Mail, MoreHorizontal } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
 
 // Interfaces aligned with database schema
 interface User {
@@ -72,32 +71,169 @@ export default function NetworkConnectionPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch connection details from our API route
+  // Generate realistic mock data of people you've met (same as in network.tsx)
+  const generateRealisticConnections = () => {
+    // People you might meet at a hackathon or tech event
+    return [
+      {
+        id: "00000000-0000-0000-0000-000000000001",
+        name: "Priya Sharma",
+        email: "priya.sharma@uwaterloo.ca",
+        created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+        gender: "Female",
+        profile_picture: "Priya",
+        last_interaction_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(), // 30 minutes ago
+        background: "ML researcher, specializes in NLP",
+        university: "University of Waterloo"
+      },
+      {
+        id: "00000000-0000-0000-0000-000000000002",
+        name: "Marcus Chen",
+        email: "mchen@utoronto.ca",
+        created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
+        gender: "Male",
+        profile_picture: "Marcus",
+        last_interaction_at: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(), // 12 hours ago
+        background: "Full-stack developer, React & Node.js",
+        university: "University of Toronto"
+      },
+      {
+        id: "00000000-0000-0000-0000-000000000003",
+        name: "Zoe Williams",
+        email: "zwilliams@mcgill.ca",
+        created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+        gender: "Female",
+        profile_picture: "Zoe",
+        last_interaction_at: new Date(Date.now() - 36 * 60 * 60 * 1000).toISOString(), // 36 hours ago
+        background: "UI/UX designer, worked at Shopify",
+        university: "McGill University"
+      },
+      {
+        id: "00000000-0000-0000-0000-000000000004",
+        name: "Jamal Thompson",
+        email: "jthompson@ubc.ca",
+        created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
+        gender: "Male",
+        profile_picture: "Jamal",
+        last_interaction_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+        background: "Backend engineer, Go & Python",
+        university: "University of British Columbia"
+      },
+      {
+        id: "00000000-0000-0000-0000-000000000005",
+        name: "Aisha Patel",
+        email: "apatel@queensu.ca",
+        created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 1 week ago
+        gender: "Female",
+        profile_picture: "Aisha",
+        last_interaction_at: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(), // 4 days ago
+        background: "Data scientist, worked on recommendation systems",
+        university: "Queen's University"
+      },
+      {
+        id: "00000000-0000-0000-0000-000000000006",
+        name: "Noah Kim",
+        email: "nkim@ualberta.ca",
+        created_at: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(), // 2 weeks ago
+        gender: "Male",
+        profile_picture: "Noah",
+        last_interaction_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(), // 10 days ago
+        background: "AR/VR developer, worked on Unity projects",
+        university: "University of Alberta"
+      }
+    ];
+  };
+
+  // Generate mock conversations for a specific connection
+  const generateMockConversations = (connectionId: string) => {
+    const topics = [
+      "Project collaboration", 
+      "Hackathon planning", 
+      "Coffee chat", 
+      "Technical discussion", 
+      "Career advice"
+    ];
+    const locations = [
+      "Engineering Building", 
+      "Campus Coffee Shop", 
+      "Student Center", 
+      "Library", 
+      "Virtual Meeting"
+    ];
+    
+    return Array.from({ length: 3 }).map((_, index) => {
+      // Create dates with most recent first
+      const daysAgo = index * 5; // 0, 5, 10 days ago
+      const endDate = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000);
+      const startDate = new Date(endDate.getTime() - 60 * 60 * 1000); // 1 hour before end
+      
+      return {
+        id: `convo-${connectionId}-${index}`,
+        initiator_user_id: index % 2 === 0 ? connectionId : "current-user-id", // Alternate who initiated
+        scanner_user_id: index % 2 === 0 ? "current-user-id" : connectionId,
+        scanner_email: "you@example.com",
+        status: index === 0 ? 'active' as const : 'ended' as const,
+        started_at: startDate.toISOString(),
+        ended_at: endDate.toISOString(),
+        location: locations[index % locations.length],
+        invite_code: `INVITE${Math.floor(Math.random() * 10000)}`
+      };
+    });
+  };
+
+  // Fetch connection details using mock data
   const fetchConnectionDetails = async () => {
     try {
       setIsLoading(true);
       setError(null);
       
-      // Call our API route
-      const response = await fetch(`/api/network/${connectionId}`);
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 800));
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to load connection details');
+      // Get all mock connections
+      const allConnections = generateRealisticConnections();
+      
+      // Find the requested connection
+      const selectedConnection = allConnections.find(conn => conn.id === connectionId);
+      
+      if (!selectedConnection) {
+        throw new Error('Connection not found');
       }
       
-      const data = await response.json();
+      // Get 3 other connections as "their connections"
+      const otherConnections = allConnections
+        .filter(conn => conn.id !== connectionId)
+        .slice(0, 3)
+        .map(conn => ({
+          id: conn.id,
+          name: conn.name,
+          email: conn.email,
+          profile_picture: conn.profile_picture
+        }));
       
-      // Add profile pictures for UI (in a real app, these would come from the database)
-      const connectionWithPictures = {
-        ...data,
-        connections: data.connections.map((conn: any) => ({
-          ...conn,
-          profile_picture: conn.name.split(' ')[0] // Use first name as avatar seed
-        }))
+      // Generate mock conversations
+      const conversations = generateMockConversations(connectionId);
+      
+      // Create the full connection details object
+      const connectionDetails: ConnectionDetails = {
+        ...selectedConnection,
+        conversations,
+        connections: otherConnections,
+        profile: {
+          first_met_where: `Hack the North 2025, ${selectedConnection.university} booth`,
+          occupation_title: selectedConnection.background?.split(',')[0] || 'Student',
+          occupation_company: selectedConnection.university,
+          occupation_start_date: '2023-09-01',
+          life_goals: [
+            `Become a leading ${selectedConnection.background?.split(',')[0].toLowerCase() || 'developer'}`,
+            "Launch a successful tech startup",
+            "Contribute to open source projects"
+          ],
+          last_interaction_at: selectedConnection.last_interaction_at
+        }
       };
       
-      setConnection(connectionWithPictures);
+      setConnection(connectionDetails);
       
     } catch (err) {
       setError('Failed to load connection details');
@@ -140,7 +276,7 @@ export default function NetworkConnectionPage() {
 
   if (isLoading) {
     return (
-      <div className="h-screen bg-gradient-to-b from-[#343D40] to-[#131519] text-white flex flex-col">
+      <div className="min-h-screen bg-gradient-to-b from-[#343D40] to-[#131519] text-white flex flex-col">
         <div className="flex-1 flex items-center justify-center">
           <div className="flex flex-col items-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mb-4"></div>
@@ -153,7 +289,7 @@ export default function NetworkConnectionPage() {
 
   if (error || !connection) {
     return (
-      <div className="h-screen bg-gradient-to-b from-[#343D40] to-[#131519] text-white flex flex-col">
+      <div className="min-h-screen bg-gradient-to-b from-[#343D40] to-[#131519] text-white flex flex-col">
         <div className="p-6">
           <button
             onClick={handleBack}
@@ -179,7 +315,7 @@ export default function NetworkConnectionPage() {
   }
 
   return (
-    <div className="h-screen bg-gradient-to-b from-[#343D40] to-[#131519] text-white flex flex-col">
+    <div className="min-h-screen bg-gradient-to-b from-[#343D40] to-[#131519] text-white flex flex-col">
       {/* Header */}
       <div className="flex-shrink-0 p-6">
         <button
@@ -193,11 +329,11 @@ export default function NetworkConnectionPage() {
       </div>
 
       {/* Profile Section */}
-      <div className="flex-1 flex flex-col items-center px-6">
+      <div className="flex-1 flex flex-col items-center px-6 pb-8">
         {/* Profile Picture */}
         <div className="w-24 h-24 rounded-full overflow-hidden mb-4">
           <img
-            src={`https://api.dicebear.com/9.x/notionists-neutral/svg?seed=${connection.name}`}
+            src={`https://api.dicebear.com/9.x/notionists-neutral/svg?seed=${(connection as any).profile_picture || connection.name}`}
             alt={connection.name}
             className="w-full h-full object-cover"
           />
@@ -208,9 +344,16 @@ export default function NetworkConnectionPage() {
           {connection.name}
         </h1>
         
-        {/* Gender and DOB */}
+        {/* Gender and University */}
         <div className="flex items-center gap-4 text-gray-300 text-sm mb-2">
           <span>{connection.gender || 'Not specified'}</span>
+          <span>•</span>
+          <span>{(connection as any).university || 'University Student'}</span>
+        </div>
+        
+        {/* Background */}
+        <div className="text-gray-300 text-xs mb-2">
+          {(connection as any).background || 'Tech enthusiast'}
         </div>
         
         {/* Last interaction */}

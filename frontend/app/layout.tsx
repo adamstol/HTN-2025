@@ -36,7 +36,7 @@ export default function RootLayout({
       </head>
       <Analytics />
       <Script src="https://cloud.umami.is/script.js" strategy="afterInteractive" data-website-id="81fcd805-b14a-4d2c-8186-332a9e0c7064"></Script>
-      <body className={`${geistSans.className} antialiased min-h-screen overflow-hidden`}>
+      <body className={`${geistSans.className} antialiased min-h-screen`}>
         {/* <Header /> */}
         <Toaster />
         <ThemeProvider

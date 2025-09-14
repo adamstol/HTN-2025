@@ -67,31 +67,91 @@ export function NetworkPage({ className = "", onScrollBack }: NetworkProps) {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     
-    // We'll use the mockSupabaseApi instead of generating connections directly
+    // Generate realistic mock data of people you've met
+    const generateRealisticConnections = () => {
+        // People you might meet at a hackathon or tech event
+        return [
+            {
+                id: "00000000-0000-0000-0000-000000000001",
+                name: "Priya Sharma",
+                email: "priya.sharma@uwaterloo.ca",
+                created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+                gender: "Female",
+                profile_picture: "Priya",
+                last_interaction_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(), // 30 minutes ago
+                background: "ML researcher, specializes in NLP",
+                university: "University of Waterloo"
+            },
+            {
+                id: "00000000-0000-0000-0000-000000000002",
+                name: "Marcus Chen",
+                email: "mchen@utoronto.ca",
+                created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
+                gender: "Male",
+                profile_picture: "Marcus",
+                last_interaction_at: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(), // 12 hours ago
+                background: "Full-stack developer, React & Node.js",
+                university: "University of Toronto"
+            },
+            {
+                id: "00000000-0000-0000-0000-000000000003",
+                name: "Zoe Williams",
+                email: "zwilliams@mcgill.ca",
+                created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+                gender: "Female",
+                profile_picture: "Zoe",
+                last_interaction_at: new Date(Date.now() - 36 * 60 * 60 * 1000).toISOString(), // 36 hours ago
+                background: "UI/UX designer, worked at Shopify",
+                university: "McGill University"
+            },
+            {
+                id: "00000000-0000-0000-0000-000000000004",
+                name: "Jamal Thompson",
+                email: "jthompson@ubc.ca",
+                created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
+                gender: "Male",
+                profile_picture: "Jamal",
+                last_interaction_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+                background: "Backend engineer, Go & Python",
+                university: "University of British Columbia"
+            },
+            {
+                id: "00000000-0000-0000-0000-000000000005",
+                name: "Aisha Patel",
+                email: "apatel@queensu.ca",
+                created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 1 week ago
+                gender: "Female",
+                profile_picture: "Aisha",
+                last_interaction_at: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(), // 4 days ago
+                background: "Data scientist, worked on recommendation systems",
+                university: "Queen's University"
+            },
+            {
+                id: "00000000-0000-0000-0000-000000000006",
+                name: "Noah Kim",
+                email: "nkim@ualberta.ca",
+                created_at: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(), // 2 weeks ago
+                gender: "Male",
+                profile_picture: "Noah",
+                last_interaction_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(), // 10 days ago
+                background: "AR/VR developer, worked on Unity projects",
+                university: "University of Alberta"
+            }
+        ];
+    };
 
-    // Fetch connections from our API route (which uses Supabase Edge Function)
+    // Fetch connections (using mock data for now)
     const fetchConnections = async () => {
         try {
             setIsLoading(true);
             setError(null);
             
-            // Call our API route
-            const response = await fetch('/api/network');
+            // Simulate API delay
+            await new Promise(resolve => setTimeout(resolve, 800));
             
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to load network connections');
-            }
-            
-            const data = await response.json();
-            
-            // Add profile pictures for UI (in a real app, these would come from the database)
-            const connectionsWithPictures = data.map((connection: any) => ({
-                ...connection,
-                profile_picture: connection.name.split(' ')[0] // Use first name as avatar seed
-            }));
-            
-            setConnections(connectionsWithPictures);
+            // Use our realistic mock data
+            const mockConnections = generateRealisticConnections();
+            setConnections(mockConnections);
             
         } catch (err) {
             setError('Failed to load network connections');
@@ -119,8 +179,8 @@ export function NetworkPage({ className = "", onScrollBack }: NetworkProps) {
     };
 
     return (
-        <div className={`h-screen bg-gradient-to-b from-[#343D40] to-[#131519] text-white flex flex-col ${className}`}>
-            <div className="">
+        <div className={`min-h-screen bg-gradient-to-b from-[#343D40] to-[#131519] text-white flex flex-col ${className}`}>
+            <div className="flex-shrink-0">
                 <button
                     onClick={handleScrollBack}
                     className="bg-white mt-5 mb-4 ml-5 px-3 py-[7px] rounded-full flex items-center gap-2 cursor-pointer hover:bg-gray-100 transition-colors"
@@ -130,7 +190,7 @@ export function NetworkPage({ className = "", onScrollBack }: NetworkProps) {
                     <span className="text-black text-sm font-normal">Back Home</span>
                 </button>
             </div>
-            <div className="flex-1 flex flex-col items-center px-6">
+            <div className="flex-1 flex flex-col items-center px-6 pb-8">
                 <h1 className="text-2xl font-normal text-gray-200 mb-8 border-b border-gray-600 pb-4 w-full text-center" style={{ fontFamily: 'Simonetta, serif' }}>
                     Your Network
                 </h1>
