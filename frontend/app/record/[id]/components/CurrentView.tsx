@@ -16,6 +16,7 @@ export default function CurrentView({ conversationId }: CurrentViewProps) {
   const [duration, setDuration] = useState(0);
   const [status, setStatus] = useState<"pending" | "active" | "ended">("active");
   const [startTime, setStartTime] = useState<number>(Date.now());
+  const [storedStartTime, setStoredStartTime] = useState<number | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
@@ -24,6 +25,63 @@ export default function CurrentView({ conversationId }: CurrentViewProps) {
   const [autoStarted, setAutoStarted] = useState(false);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+
+  // Initialize duration from localStorage and database
+  useEffect(() => {
+    const initializeDuration = async () => {
+      // Check localStorage for stored start time
+      const storageKey = `conversation_${conversationId}_start_time`;
+      const storedTime = localStorage.getItem(storageKey);
+      
+      if (storedTime) {
+        const parsedTime = parseInt(storedTime);
+        setStoredStartTime(parsedTime);
+        setStartTime(parsedTime);
+        
+        // Calculate current duration
+        const currentDuration = Math.floor((Date.now() - parsedTime) / 1000);
+        setDuration(currentDuration);
+      }
+
+      // Also check database for official start time
+      try {
+        const { data, error } = await supabase
+          .from('conversations')
+          .select('status, started_at')
+          .eq('id', conversationId)
+          .single();
+
+        if (!error && data) {
+          setStatus(data.status);
+          
+          if (data.started_at) {
+            const dbStartTime = new Date(data.started_at).getTime();
+            
+            // If no stored time or db time is different, use db time
+            if (!storedTime || Math.abs(dbStartTime - (storedTime ? parseInt(storedTime) : 0)) > 5000) {
+              setStartTime(dbStartTime);
+              setStoredStartTime(dbStartTime);
+              localStorage.setItem(storageKey, dbStartTime.toString());
+              
+              // Recalculate duration with db time
+              const currentDuration = Math.floor((Date.now() - dbStartTime) / 1000);
+              setDuration(currentDuration);
+            }
+          } else if (!storedTime) {
+            // No start time in db or storage, use current time
+            const now = Date.now();
+            setStartTime(now);
+            setStoredStartTime(now);
+            localStorage.setItem(storageKey, now.toString());
+          }
+        }
+      } catch (err) {
+        console.error("Error initializing duration:", err);
+      }
+    };
+
+    initializeDuration();
+  }, [conversationId, supabase]);
 
   // Real-time status monitoring
   useEffect(() => {
@@ -45,10 +103,15 @@ export default function CurrentView({ conversationId }: CurrentViewProps) {
         if (!error && data && mounted) {
           console.log("CurrentView - Polled conversation status:", data.status);
           setStatus(data.status);
-          
-          // Set actual start time if available
+
+          // Update start time if it changed in database
           if (data.started_at) {
-            setStartTime(new Date(data.started_at).getTime());
+            const dbStartTime = new Date(data.started_at).getTime();
+            if (Math.abs(dbStartTime - startTime) > 5000) {
+              setStartTime(dbStartTime);
+              setStoredStartTime(dbStartTime);
+              localStorage.setItem(`conversation_${conversationId}_start_time`, dbStartTime.toString());
+            }
           }
         }
       } catch (err) {
@@ -75,7 +138,7 @@ export default function CurrentView({ conversationId }: CurrentViewProps) {
           const row: any = payload.new;
           if (mounted && row?.status) {
             setStatus(row.status);
-            
+
             // Update start time if it changed
             if (row.started_at) {
               setStartTime(new Date(row.started_at).getTime());
@@ -120,16 +183,18 @@ export default function CurrentView({ conversationId }: CurrentViewProps) {
     }
   }, [autoStarted]);
 
-  // Timer for recording duration
+  // Timer for recording duration with localStorage sync
   useEffect(() => {
-    const timer = setInterval(() => {
-      const now = Date.now();
-      const elapsed = Math.floor((now - startTime) / 1000);
-      setDuration(elapsed);
+    const interval = setInterval(() => {
+      const newDuration = Math.floor((Date.now() - startTime) / 1000);
+      setDuration(newDuration);
+      
+      // Store current duration in localStorage for persistence
+      localStorage.setItem(`conversation_${conversationId}_duration`, newDuration.toString());
     }, 1000);
 
-    return () => clearInterval(timer);
-  }, [startTime]);
+    return () => clearInterval(interval);
+  }, [startTime, conversationId]);
 
   const startRecording = async () => {
     try {
@@ -169,13 +234,28 @@ export default function CurrentView({ conversationId }: CurrentViewProps) {
           );
 
           console.log("Sending audio to transcript API:", audioFile);
-          const result = await sendTranscriptClient({ 
-            file: audioFile, 
-            conversationId 
+          const result = await sendTranscriptClient({
+            file: audioFile,
+            conversationId
           });
           console.log("Transcript API result:", result);
 
           setTranscriptResult(result);
+                  // Update the conversation with transcript data
+          const { error } = await supabase
+          .from('conversations')
+          .update({
+            status: 'ended',
+            ended_at: new Date().toISOString(),
+
+            // Note: Based on schema, there's no transcript field, so we store in location for now
+          })
+          .eq('id', conversationId);
+
+          if (error) {
+            console.error("Error updating conversation:", error);
+            alert("Error updating conversation. Please try again.");
+          }
         } catch (error) {
           console.error("Error processing transcript:", error);
           alert("Error processing recording. Please try again.");
