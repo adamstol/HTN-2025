@@ -1,12 +1,16 @@
 "use client";
 
-import { useState, useRef } from 'react';
-import { Users, Sparkles, MoveUpRight, Mic, Square } from 'lucide-react';
-import ConversationHistory from '@/components/ConversationHistory';
+import { useState, useRef } from "react";
+import { Users, Sparkles, MoveUpRight, Mic, Square } from "lucide-react";
+import ConversationHistory from "@/components/ConversationHistory";
+import BubbleField from "@/components/BubbleField";
+import CircleBlobs from "@/components/CloudButton";
 
 export default function RecordPage() {
   const [isRecording, setIsRecording] = useState(false);
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(
+    null
+  );
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -16,39 +20,41 @@ export default function RecordPage() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaStreamRef.current = stream;
-      
+
       const recorder = new MediaRecorder(stream);
       setMediaRecorder(recorder);
-      
+
       // Clear previous audio chunks
       audioChunksRef.current = [];
-      
+
       recorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data);
         }
       };
-      
+
       recorder.onstop = () => {
         // Create MP3 blob from collected chunks
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/mp3' });
+        const audioBlob = new Blob(audioChunksRef.current, {
+          type: "audio/mp3",
+        });
         setAudioBlob(audioBlob);
-        
+
         // Create download URL for the MP3
         const audioUrl = URL.createObjectURL(audioBlob);
-        console.log('Recording completed. Audio blob created:', audioBlob);
-        console.log('Download URL:', audioUrl);
-        
+        console.log("Recording completed. Audio blob created:", audioBlob);
+        console.log("Download URL:", audioUrl);
+
         // Clean up
-        stream.getTracks().forEach(track => track.stop());
+        stream.getTracks().forEach((track) => track.stop());
         setIsRecording(false);
       };
-      
+
       recorder.start();
       setIsRecording(true);
     } catch (error) {
-      console.error('Error accessing microphone:', error);
-      alert('Unable to access microphone. Please check permissions.');
+      console.error("Error accessing microphone:", error);
+      alert("Unable to access microphone. Please check permissions.");
     }
   };
 
@@ -68,15 +74,15 @@ export default function RecordPage() {
 
   const handleViewConversationHistory = () => {
     // Immediately scroll to conversation history section
-    conversationHistoryRef.current?.scrollIntoView({ 
-      behavior: 'smooth',
-      block: 'start'
+    conversationHistoryRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
     });
   };
 
   const handleScrollBackComplete = () => {
     // Scroll back to top completed
-    console.log('Scroll back completed');
+    console.log("Scroll back completed");
   };
 
   return (
@@ -86,7 +92,9 @@ export default function RecordPage() {
         {/* Header Section */}
         <div className="flex-shrink-0 pt-16 pb-8 px-6">
           <div className="text-center">
-            <h1 className="text-xl font-normal text-gray-200" style={{fontFamily: 'Simonetta, serif'}}>
+            <h1
+              className="text-xl font-normal text-gray-200"
+              style={{ fontFamily: "Simonetta, serif" }}>
               Hi, how can I help you today?
             </h1>
           </div>
@@ -94,25 +102,59 @@ export default function RecordPage() {
 
         {/* Main Content - Circle Section */}
         <div className="flex-1 flex items-center justify-center px-6">
+          <BubbleField isRecording={isRecording} />
+
           <div className="flex flex-col items-center">
             {/* Record Circle */}
-            <button 
-              onClick={handleRecordClick}
-              className={`w-32 h-32 rounded-full flex items-center justify-center mb-6 transition-colors cursor-pointer hover:opacity-80 ${
-                isRecording ? 'bg-gray-500' : 'bg-gray-300'
-              }`}
-            >
-              {isRecording ? (
-                <Square className="w-8 h-8 text-white" />
-              ) : (
-                <Mic className="w-8 h-8 text-gray-700" />
+            {/* Record Circle */}
+            <div className="relative w-32 h-32 mb-6 flex items-center justify-center">
+              {/* White aura / glow */}
+              {isRecording && (
+                <div
+                  className="absolute inset-0 rounded-full"
+                  style={{
+                    boxShadow: "0 0 30px 15px rgba(255,255,255,0.5)",
+                    animation: "pulseAura 1.5s infinite alternate",
+                  }}
+                />
               )}
-            </button>
-            
+
+              {/* Actual button */}
+              <button
+                onClick={handleRecordClick}
+                className={`relative w-32 h-32 rounded-full flex items-center justify-center transition-all cursor-pointer
+      ${isRecording ? "bg-white/80" : "bg-gray-300"}`}>
+                {isRecording ? (
+                  <div className="">
+                    <CircleBlobs
+                      isRecording={true}
+                      onClick={handleRecordClick}
+                    />
+                  </div>
+                ) : (
+                  <Mic className="w-8 h-8 text-gray-700" />
+                )}
+              </button>
+            </div>
+
+            {/* Add this CSS in your global stylesheet or tailwind config */}
+            <style jsx>{`
+              @keyframes pulseAura {
+                0% {
+                  box-shadow: 0 0 5px 5px rgba(255, 255, 255, 0.4);
+                }
+                100% {
+                  box-shadow: 0 0 15px 10px rgba(255, 255, 255, 0.6);
+                }
+              }
+            `}</style>
+
             {/* Tap to record text */}
             <div className="text-center">
-              <p className="text-gray-300 text-lg" style={{fontFamily: 'Simonetta, serif'}}>
-                {isRecording ? 'Recording...' : 'Tap to record...'}
+              <p
+                className="text-gray-300 text-lg"
+                style={{ fontFamily: "Simonetta, serif" }}>
+                {isRecording ? "Recording..." : "Tap to record..."}
               </p>
             </div>
           </div>
@@ -124,7 +166,7 @@ export default function RecordPage() {
             {/* Two Cards Side by Side */}
             <div className="grid grid-cols-2 gap-4">
               {/* Access your network card */}
-              <div className="bg-slate-700 rounded-2xl p-4 h-24 flex flex-col cursor-pointer hover:bg-slate-600 transition-colors">
+              <div className="bg-[#353E41] rounded-2xl p-4 h-24 flex flex-col cursor-pointer hover:bg-slate-600 transition-colors">
                 <div className="w-6 h-6 flex items-center justify-center mb-2">
                   <Users className="w-5 h-5 text-gray-300" />
                 </div>
@@ -135,7 +177,7 @@ export default function RecordPage() {
               </div>
 
               {/* AI Chatbot card */}
-              <div className="bg-slate-700 rounded-2xl p-4 h-24 flex flex-col cursor-pointer hover:bg-slate-600 transition-colors">
+              <div className="bg-[#353E41] rounded-2xl p-4 h-24 flex flex-col cursor-pointer hover:bg-slate-600 transition-colors">
                 <div className="w-6 h-6 flex items-center justify-center mb-2">
                   <Sparkles className="w-5 h-5 text-gray-300" />
                 </div>
@@ -148,13 +190,21 @@ export default function RecordPage() {
 
             {/* View Conversation History */}
             <div className="flex justify-center items-center pt-4">
-              <button 
+              <button
                 onClick={handleViewConversationHistory}
-                className="text-gray-400 text-sm hover:text-gray-300 transition-colors flex items-center justify-center gap-2"
-              >
+                className="text-gray-400 text-sm hover:text-gray-300 transition-colors flex items-center justify-center gap-2">
                 <span>View Conversation History</span>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
                 </svg>
               </button>
             </div>
@@ -169,4 +219,3 @@ export default function RecordPage() {
     </>
   );
 }
-
