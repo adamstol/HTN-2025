@@ -3,11 +3,14 @@
 import { useState, useRef } from 'react';
 import { Users, Sparkles, MoveUpRight, Mic, Square } from 'lucide-react';
 import ConversationHistory from '@/components/ConversationHistory';
+import { sendTranscriptClient } from '@/lib/transcripts/client';
 
 export default function RecordPage() {
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [transcriptResult, setTranscriptResult] = useState<any>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const conversationHistoryRef = useRef<HTMLDivElement>(null);
@@ -29,19 +32,36 @@ export default function RecordPage() {
         }
       };
       
-      recorder.onstop = () => {
-        // Create MP3 blob from collected chunks
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/mp3' });
+      recorder.onstop = async () => {
+        // Create audio blob from collected chunks
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         setAudioBlob(audioBlob);
         
-        // Create download URL for the MP3
-        const audioUrl = URL.createObjectURL(audioBlob);
         console.log('Recording completed. Audio blob created:', audioBlob);
-        console.log('Download URL:', audioUrl);
         
-        // Clean up
+        // Clean up stream
         stream.getTracks().forEach(track => track.stop());
         setIsRecording(false);
+        
+        // Send to transcript API
+        setIsProcessing(true);
+        try {
+          // Convert blob to File for the API
+          const audioFile = new File([audioBlob], `recording-${Date.now()}.webm`, {
+            type: 'audio/webm'
+          });
+          
+          console.log('Sending audio to transcript API:', audioFile);
+          const result = await sendTranscriptClient({ file: audioFile });
+          console.log('Transcript API result:', result);
+          
+          setTranscriptResult(result);
+        } catch (error) {
+          console.error('Error processing transcript:', error);
+          alert('Error processing recording. Please try again.');
+        } finally {
+          setIsProcessing(false);
+        }
       };
       
       recorder.start();
@@ -109,11 +129,33 @@ export default function RecordPage() {
               )}
             </button>
             
-            {/* Tap to record text */}
+            {/* Status text */}
             <div className="text-center">
               <p className="text-gray-300 text-lg" style={{fontFamily: 'Simonetta, serif'}}>
-                {isRecording ? 'Recording...' : 'Tap to record...'}
+                {isRecording ? 'Recording...' : isProcessing ? 'Processing...' : 'Tap to record...'}
               </p>
+              
+              {/* Transcript Results */}
+              {transcriptResult && (
+                <div className="mt-4 p-4 bg-slate-800 rounded-lg max-w-md">
+                  <h3 className="text-white text-sm font-semibold mb-2">Conversation:</h3>
+                  {transcriptResult.conversation && transcriptResult.conversation.map((turn: any, index: number) => (
+                    <div key={index} className="mb-2 text-left">
+                      <span className="text-blue-300 font-medium">{turn.speaker}:</span>
+                      <span className="text-gray-200 ml-2">{turn.text}</span>
+                    </div>
+                  ))}
+                  
+                  {transcriptResult.analysis && (
+                    <div className="mt-3 pt-3 border-t border-slate-600">
+                      <h4 className="text-white text-xs font-semibold mb-1">Analysis:</h4>
+                      <pre className="text-xs text-gray-300 whitespace-pre-wrap">
+                        {JSON.stringify(transcriptResult.analysis, null, 2)}
+                      </pre>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
