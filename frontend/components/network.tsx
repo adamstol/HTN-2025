@@ -1,7 +1,8 @@
 "use client";
 
 import { ChevronLeft, MoveUpRight } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 interface NetworkProps {
     className?: string;
@@ -13,6 +14,8 @@ interface Connection {
     name: string;
     timeConnected: string;
     profilePicture: string;
+    email?: string;
+    userId?: string;
 }
 
 const avatarNames = [
@@ -39,7 +42,12 @@ const avatarNames = [
 ] as const;
 
 export function NetworkPage({ className = "", onScrollBack }: NetworkProps) {
-    // Generate random connections with avatars
+    const router = useRouter();
+    const [connections, setConnections] = useState<Connection[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    
+    // Generate random connections with avatars (fallback for development)
     const generateRandomConnections = () => {
         const connectionNames = ['Alex Johnson', 'Sarah Chen', 'Michael Rodriguez', 'Emma Wilson', 'David Kim'];
         const timeOptions = ['Connected 2 hours ago', 'Connected yesterday', 'Connected 3 days ago', 'Connected 1 week ago', 'Connected 2 weeks ago'];
@@ -49,23 +57,55 @@ export function NetworkPage({ className = "", onScrollBack }: NetworkProps) {
             const randomTimeIndex = Math.floor(Math.random() * timeOptions.length);
 
             return {
-                id: (index + 1).toString(),
+                id: `conn_${Date.now()}_${index}`, // More unique ID format
                 name,
                 timeConnected: timeOptions[randomTimeIndex],
-                profilePicture: avatarNames[randomAvatarIndex]
+                profilePicture: avatarNames[randomAvatarIndex],
+                email: `${name.toLowerCase().replace(' ', '.')}@example.com`,
+                userId: `user_${index + 1}`
             };
         });
     };
 
-    const [connections] = useState<Connection[]>(generateRandomConnections());
+    // Fetch connections from API
+    const fetchConnections = async () => {
+        try {
+            setIsLoading(true);
+            setError(null);
+            
+            // TODO: Replace with actual API call
+            // const response = await fetch('/api/network/connections');
+            // const data = await response.json();
+            // setConnections(data.connections);
+            
+            // For now, simulate API delay and use mock data
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            const mockConnections = generateRandomConnections();
+            setConnections(mockConnections);
+            
+        } catch (err) {
+            setError('Failed to load network connections');
+            console.error('Error fetching connections:', err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchConnections();
+    }, []);
 
     const handleScrollBack = () => {
-        // Scroll to top of the page
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        // Navigate back to home/record page
+        router.push('/record');
         // Call optional callback
         if (onScrollBack) {
             onScrollBack();
         }
+    };
+
+    const handleConnectionClick = (connectionId: string) => {
+        router.push(`/network/${connectionId}`);
     };
 
     return (
@@ -85,7 +125,22 @@ export function NetworkPage({ className = "", onScrollBack }: NetworkProps) {
                     Your Network
                 </h1>
 
-                {connections.length === 0 ? (
+{isLoading ? (
+                    <div className="flex flex-col items-center justify-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mb-4"></div>
+                        <p className="text-gray-400 text-sm">Loading your network...</p>
+                    </div>
+                ) : error ? (
+                    <div className="flex flex-col items-center justify-center py-8">
+                        <p className="text-red-400 text-sm mb-4">{error}</p>
+                        <button 
+                            onClick={fetchConnections}
+                            className="bg-slate-600 hover:bg-slate-500 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                        >
+                            Try Again
+                        </button>
+                    </div>
+                ) : connections.length === 0 ? (
                     <p className="text-gray-400 text-sm">
                         Your network connections will appear here
                     </p>
@@ -94,6 +149,7 @@ export function NetworkPage({ className = "", onScrollBack }: NetworkProps) {
                         {connections.map((connection) => (
                             <div
                                 key={connection.id}
+                                onClick={() => handleConnectionClick(connection.id)}
                                 className="bg-slate-700 rounded-2xl p-4 flex items-center justify-between cursor-pointer hover:bg-slate-600 transition-colors"
                             >
                                 <div className='flex items-center'>
@@ -115,7 +171,6 @@ export function NetworkPage({ className = "", onScrollBack }: NetworkProps) {
                                 </div>
                                 <MoveUpRight className="w-4 h-4 text-gray-400" />
                             </div>
-
                         ))}
                     </div>
                 )}

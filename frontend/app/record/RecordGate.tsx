@@ -42,7 +42,7 @@ export default function RecordGate({ initialId, inviteUrl }: Props) {
     };
   }, [initialId, inviteUrl, supabase]);
 
-  if (status === "active") {
+  if (status === "pending") {
     return <RecordClient />;
   }
 

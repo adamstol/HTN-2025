@@ -1,4 +1,8 @@
+"use client";
+
+
 import { ChevronUp, MoveUpRight } from "lucide-react";
+import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 
 interface ConversationHistoryProps {
@@ -16,6 +20,7 @@ export default function ConversationHistory({
   className = "",
   onScrollBack,
 }: ConversationHistoryProps) {
+  const router = useRouter();
   // Mock conversation data
   const [conversations] = useState<Conversation[]>([
     {
@@ -52,7 +57,7 @@ export default function ConversationHistory({
         className="bg-white w-[30px] h-[30px] mt-5 ml-5 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-100 transition-colors">
         <ChevronUp className="w-5 h-5 text-black" />
       </button>
-      <div className="flex-1 flex flex-col items-center justify-center px-6">
+      <div className="flex-1 flex flex-col items-center px-6">
         <h1
           className="text-2xl font-normal text-gray-200 mb-8"
           style={{ fontFamily: "Simonetta, serif" }}>
@@ -68,6 +73,7 @@ export default function ConversationHistory({
             {conversations.map((conversation) => (
               <div
                 key={conversation.id}
+                onClick={() => router.push(`/record/${conversation.id}`)}
                 className="bg-[#353E41] rounded-2xl p-4 flex items-center justify-between cursor-pointer hover:bg-slate-600 transition-colors">
                 <div className="flex flex-col">
                   <h3

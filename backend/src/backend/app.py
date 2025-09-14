@@ -1,24 +1,43 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 import google.generativeai as genai
 from openai import OpenAI
 import tempfile
 import json
 
 # Load environment variables
-load_dotenv("config/.env")
+load_dotenv("../../config/.env", override=False)
 
 # Initialize Flask app
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
+# Get API keys with fallback and debugging
+google_api_key = os.getenv("GOOGLE_API_KEY")
+openai_api_key = os.getenv("OPENAI_API_KEY")
+
+print(f"Google API Key found: {'Yes' if google_api_key else 'No'}")
+print(f"OpenAI API Key found: {'Yes' if openai_api_key else 'No'}")
+
+if not google_api_key:
+    print("WARNING: GOOGLE_API_KEY not found in environment variables")
+if not openai_api_key:
+    print("WARNING: OPENAI_API_KEY not found in environment variables")
+
 # Configure Gemini
-genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+if google_api_key:
+    genai.configure(api_key=google_api_key)
+else:
+    print("ERROR: Cannot configure Gemini without GOOGLE_API_KEY")
 
 # Configure OpenAI
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+if openai_api_key:
+    client = OpenAI(api_key=openai_api_key)
+else:
+    print("ERROR: Cannot configure OpenAI without OPENAI_API_KEY")
+    client = None
 
 
 @app.route("/")
@@ -30,6 +49,13 @@ def home():
 def transcribe_and_analyze():
     if "file" not in request.files:
         return jsonify({"error": "No audio file uploaded"}), 400
+
+    # Check if API keys are available
+    if not google_api_key:
+        return jsonify({"error": "Google API key not configured. Please set GOOGLE_API_KEY environment variable."}), 500
+    
+    if not openai_api_key or client is None:
+        return jsonify({"error": "OpenAI API key not configured. Please set OPENAI_API_KEY environment variable."}), 500
 
     audio_file = request.files["file"]
 
@@ -129,8 +155,23 @@ Extract ONLY explicit, concrete facts directly stated by either person in the fo
 Conversation:
 {text_input}
 """
-        analysis_response = model.generate_content(analysis_prompt)
-        raw_analysis = analysis_response.text.strip() if analysis_response else ""
+        try:
+            analysis_response = model.generate_content(analysis_prompt)
+            
+            # Check if response has valid content
+            if analysis_response and hasattr(analysis_response, 'candidates') and analysis_response.candidates:
+                candidate = analysis_response.candidates[0]
+                if hasattr(candidate, 'content') and candidate.content and candidate.content.parts:
+                    raw_analysis = analysis_response.text.strip()
+                else:
+                    print(f"Gemini response has no valid content. Finish reason: {getattr(candidate, 'finish_reason', 'unknown')}")
+                    raw_analysis = "No analysis available - content filtered or blocked"
+            else:
+                print("Gemini response is empty or invalid")
+                raw_analysis = "No analysis available - empty response"
+        except Exception as e:
+            print(f"Gemini API error: {str(e)}")
+            raw_analysis = f"Analysis failed: {str(e)}"
 
         speaker_facts = {}
         for line in raw_analysis.splitlines():

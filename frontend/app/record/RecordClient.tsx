@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { Users, Sparkles, MoveUpRight, Mic, Square } from "lucide-react";
 import ConversationHistory from "@/components/ConversationHistory";
 import BubbleField from "@/components/BubbleField";
@@ -8,6 +9,7 @@ import CircleBlobs from "@/components/CloudButton";
 import { sendTranscriptClient } from "@/lib/transcripts/client";
 
 export default function RecordClient() {
+  const router = useRouter();
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(
     null
@@ -112,6 +114,10 @@ export default function RecordClient() {
   const handleScrollBackComplete = () => {
     // Scroll back to top completed
     console.log("Scroll back completed");
+  };
+
+  const handleNavigateToNetwork = () => {
+    router.push("/network");
   };
 
   return (
@@ -228,7 +234,10 @@ export default function RecordClient() {
             {/* Two Cards Side by Side */}
             <div className="grid grid-cols-2 gap-4">
               {/* Access your network card */}
-              <div className="bg-[#353E41] rounded-2xl p-4 h-24 flex flex-col cursor-pointer hover:bg-slate-600 transition-colors">
+              <div 
+                onClick={handleNavigateToNetwork}
+                className="bg-[#353E41] rounded-2xl p-4 h-24 flex flex-col cursor-pointer hover:bg-slate-600 transition-colors"
+              >
                 <div className="w-6 h-6 flex items-center justify-center mb-2">
                   <Users className="w-5 h-5 text-gray-300" />
                 </div>
