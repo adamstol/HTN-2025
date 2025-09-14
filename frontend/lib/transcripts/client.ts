@@ -13,8 +13,7 @@ async function sha256Hex(input: string): Promise<string> {
 }
 
 const backendBase =
-  process.env.NEXT_PUBLIC_PY_BACKEND_URL ||
-  process.env.NEXT_PUBLIC_PYTHON_BACKEND_URL ||
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
   "http://localhost:5000";
 
 export async function sendTranscriptClient(opts: {
@@ -71,8 +70,7 @@ export async function sendTranscriptClient(opts: {
 
       if (!res.ok) throw new Error("Failed to transcribe file");
       backendResponse = await res.json();
-      analysis = backendResponse.analysis ?? null;
-      
+
       // Update textForStorage with the actual conversation from backend
       if (backendResponse.conversation && Array.isArray(backendResponse.conversation)) {
         const conversationText = backendResponse.conversation
@@ -80,7 +78,7 @@ export async function sendTranscriptClient(opts: {
           .join("\n");
         // Re-calculate hash with actual transcribed content
         const actualHash = await sha256Hex(conversationText);
-        
+
         // Update the Supabase record with actual transcribed content
         if (conversation_id) {
           await supabase
@@ -91,7 +89,19 @@ export async function sendTranscriptClient(opts: {
             })
             .eq("id", conversation_id);
         }
-        
+        // Call analyzer with the conversation turns
+        try {
+          const analyzeRes = await fetch(`${backendBase}/analyze`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ conversation: backendResponse.conversation }),
+          });
+          if (analyzeRes.ok) {
+            const analyzeJson = await analyzeRes.json();
+            analysis = analyzeJson?.analysis ?? analyzeJson ?? null;
+          }
+        } catch (_) { }
+
         return {
           ok: true,
           conversation_id,
@@ -102,10 +112,21 @@ export async function sendTranscriptClient(opts: {
         } as const;
       }
     } else {
-      // For text/conversation input, we don't have a separate /analyze endpoint
-      // The backend only supports file transcription currently
-      console.warn("Backend only supports file transcription. Text analysis not available.");
-      analysis = null;
+      // Text/conversation path: call analyzer directly
+      try {
+        const payload = Array.isArray(conversation) && conversation.length > 0
+          ? { conversation }
+          : { text: textForStorage };
+        const res = await fetch(`${backendBase}/analyze`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (res.ok) {
+          const json = await res.json();
+          analysis = json?.analysis ?? json ?? null;
+        }
+      } catch (_) { }
     }
   } catch (error) {
     console.error("Backend request failed:", error);
