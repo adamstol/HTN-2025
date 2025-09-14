@@ -1,30 +1,33 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import os
 from dotenv import load_dotenv
 import google.generativeai as genai
-import openai
-import tempfile
 from openai import OpenAI
+import tempfile
 import json
+
 # Load environment variables
 load_dotenv("config/.env")
 
 # Initialize Flask app
 app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes
 
 # Configure Gemini
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
 # Configure OpenAI
-openai.api_key = os.getenv("OPENAI_API_KEY")
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
 @app.route("/")
 def home():
     return jsonify({"message": "HTN2025 Backend is running 🚀"})
 
+
 @app.route("/transcribe", methods=["POST"])
-def transcribe_audio():
+def transcribe_and_analyze():
     if "file" not in request.files:
         return jsonify({"error": "No audio file uploaded"}), 400
 
@@ -37,37 +40,46 @@ def transcribe_audio():
             temp_path = temp.name
 
         # 1️⃣ Transcribe with Whisper (verbose JSON for timestamps)
-        transcription = openai.audio.transcriptions.create(
+        transcription = client.audio.transcriptions.create(
             model="whisper-1",
             file=open(temp_path, "rb"),
             response_format="verbose_json"
         )
 
-        segments = transcription.segments
+        segments = getattr(transcription, "segments", None)
         if not segments:
-            return jsonify({"conversation": [{"speaker": "Unknown", "text": transcription.text}]}), 200
+            conversation_list = [{"speaker": "Unknown", "text": transcription.text}]
+        else:
+            # 2️⃣ Group nearby segments (<= 0.5s apart)
+            grouped_segments = []
+            current_group = {
+                "start": segments[0].start,
+                "end": segments[0].end,
+                "text": segments[0].text.strip()
+            }
 
-        # 2️⃣ Group nearby segments (less than 0.5s apart)
-        grouped_segments = []
-        current_group = {"start": segments[0].start, "end": segments[0].end, "text": segments[0].text.strip()}
+            for seg in segments[1:]:
+                if seg.start - current_group["end"] <= 0.5:
+                    current_group["text"] += " " + seg.text.strip()
+                    current_group["end"] = seg.end
+                else:
+                    grouped_segments.append(current_group)
+                    current_group = {"start": seg.start, "end": seg.end, "text": seg.text.strip()}
+            grouped_segments.append(current_group)
 
-        for seg in segments[1:]:
-            if seg.start - current_group["end"] <= 0.5:  # 0.5 second pause threshold
-                current_group["text"] += " " + seg.text.strip()
-                current_group["end"] = seg.end
-            else:
-                grouped_segments.append(current_group)
-                current_group = {"start": seg.start, "end": seg.end, "text": seg.text.strip()}
-        grouped_segments.append(current_group)
-
-        # 3️⃣ Prepare prompt for GPT
-        segment_text = "\n".join([f"[{g['start']:.2f}-{g['end']:.2f}] {g['text']}" for g in grouped_segments])
-        prompt = f"""
-You are an assistant that separates conversation segments by speaker.
-Assume there are only two speakers.
-Assign consistent labels: Speaker 1 and Speaker 2.
-Do NOT merge multiple sentences from the same speaker; keep the flow natural.
-Output ONLY a JSON array like this:
+            # 3️⃣ Let GPT separate speakers with names if possible
+            segment_text = "\n".join(
+                [f"[{g['start']:.2f}-{g['end']:.2f}] {g['text']}" for g in grouped_segments]
+            )
+            prompt = f"""
+You are separating conversation segments by speaker.
+Rules:
+- There are only two speakers.
+- If someone says another person’s name (e.g., "Hi Ibrahim"), that name belongs to the *other* speaker.
+- If someone talks about their own items (e.g., "I got my shoes from Puma"), that statement belongs to them, not the person they named.
+- Keep labels consistent across the conversation.
+- If no names are mentioned, label speakers as "Speaker 1" and "Speaker 2".
+- Output ONLY valid JSON in this format:
 
 [
   {{"speaker": "Speaker 1", "text": "First utterance"}},
@@ -78,66 +90,50 @@ Segments:
 {segment_text}
 """
 
-        # 4️⃣ Call GPT to assign speakers
-        response = openai.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0
-        )
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0
+            )
 
-        conversation_json_str = response.choices[0].message.content.strip()
-        conversation_list = json.loads(conversation_json_str)
+            conversation_json_str = response.choices[0].message.content.strip()
 
-        # 5️⃣ Merge consecutive lines from same speaker (optional)
-        merged_conversation = []
-        for seg in conversation_list:
-            if merged_conversation and merged_conversation[-1]['speaker'] == seg['speaker']:
-                merged_conversation[-1]['text'] += " " + seg['text']
-            else:
-                merged_conversation.append(seg)
+            try:
+                conversation_list = json.loads(conversation_json_str)
+            except json.JSONDecodeError:
+                # Fallback: return plain text if JSON is malformed
+                conversation_list = [{"speaker": "Unknown", "text": transcription.text}]
 
-        # 6️⃣ Return JSON array format
-        return jsonify({"conversation": merged_conversation})
+            # 4️⃣ Merge consecutive lines from same speaker
+            merged_conversation = []
+            for seg in conversation_list:
+                if merged_conversation and merged_conversation[-1]['speaker'] == seg['speaker']:
+                    merged_conversation[-1]['text'] += " " + seg['text']
+                else:
+                    merged_conversation.append(seg)
+            conversation_list = merged_conversation
 
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        # 5️⃣ Build conversation string for analysis
+        text_input = " ".join(f"{c['speaker']}: {c['text']}" for c in conversation_list)
 
-
-@app.route("/analyze", methods=["POST"])
-def analyze_text():
-    try:
-        data = request.get_json()
-
-        if "text" in data:
-            text_input = data["text"]
-        elif "conversation" in data:
-            conversation = data["conversation"]
-            if not isinstance(conversation, list) or len(conversation) == 0:
-                return jsonify({"error": "Conversation must be a non-empty list"}), 400
-            text_input = " ".join(f"{c['speaker']}: {c['text']}" for c in conversation)
-        else:
-            return jsonify({"error": "No text or conversation provided"}), 400
-
+        # 6️⃣ Run Gemini analysis
         model = genai.GenerativeModel("gemini-2.5-flash")
-
-        prompt = f"""
+        analysis_prompt = f"""
 Extract ONLY explicit, concrete facts directly stated by either person in the following conversation. 
-- Do not include questions, guesses, or compliments from either person. 
-- Do not include traits, opinions, or interpretations. 
-- Rewrite each fact as a standalone statement with full context. 
-- If either person refers to something vaguely (e.g., "I just got it yesterday"), expand it with the context (e.g., "Bought the shirt yesterday"). 
-- Output ONLY in the format 'Person: Fact' with no extra text.
+- Do not include questions, guesses, or compliments.
+- Do not include traits, opinions, or interpretations.
+- Rewrite each fact as a standalone statement with full context.
+- If either person refers to something vaguely (e.g., "I just got it yesterday"), expand it with context.
+- Output ONLY in the format 'Person: Fact'.
 
 Conversation:
 {text_input}
 """
+        analysis_response = model.generate_content(analysis_prompt)
+        raw_analysis = analysis_response.text.strip() if analysis_response else ""
 
-        response = model.generate_content(prompt)
-        raw_analysis = response.text.strip()
-
-        # Split by lines and organize by speaker
         speaker_facts = {}
-        for line in raw_analysis.split("\n"):
+        for line in raw_analysis.splitlines():
             if ":" in line:
                 speaker, fact = line.split(":", 1)
                 speaker = speaker.strip()
@@ -146,7 +142,10 @@ Conversation:
                     speaker_facts[speaker] = []
                 speaker_facts[speaker].append(fact)
 
-        return jsonify({"analysis": speaker_facts})
+        return jsonify({
+            "conversation": conversation_list,
+            "analysis": speaker_facts or {"note": "No explicit facts extracted"}
+        })
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
