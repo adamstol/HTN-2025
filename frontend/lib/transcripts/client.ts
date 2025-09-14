@@ -1,4 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
+import { getUserIdByEmail } from "../supabase/client-queries";
+import { processTranscriptAndUpdateGraph } from "../zep/transcript-processor";
 
 export type ConversationTurn = { speaker: string; text: string };
 
@@ -12,13 +14,15 @@ export type TranscriptResponse = {
 
 const backendBase =
   process.env.NEXT_PUBLIC_BACKEND_URL ||
-  "http://localhost:5000";
+  "http://localhost:5001";
 
 export async function sendTranscriptClient(opts: {
   file?: File;
   conversationId?: string;
+  userEmail?: string;
+  userName?: string;
 }): Promise<TranscriptResponse> {
-  const { file, conversationId } = opts;
+  const { file, conversationId, userEmail, userName } = opts;
 
   if (!file) {
     throw new Error("File is required for transcription");
@@ -41,6 +45,9 @@ export async function sendTranscriptClient(opts: {
     const transcript = backendResponse.transcript || [];
     const facts = backendResponse.facts || {};
     const summary = backendResponse.summary || "";
+    console.log("transcript", transcript);
+    console.log("facts", facts);
+    console.log("summary", summary);
 
     // Save to Supabase conversations table if conversationId provided
     let savedConversationId = conversationId;
@@ -53,20 +60,27 @@ export async function sendTranscriptClient(opts: {
           .map((turn: ConversationTurn) => `${turn.speaker}: ${turn.text}`)
           .join('\n');
 
-        // Update the conversation with transcript data
-        const { error } = await supabase
-          .from('conversations')
-          .update({
-            status: 'ended',
-            ended_at: new Date().toISOString(),
+        // Process transcript with Zep graph
+        try {
 
-            // Note: Based on schema, there's no transcript field, so we store in location for now
-          })
-          .eq('id', conversationId);
-
-        if (error) {
-          console.error('Failed to save transcript to database:', error);
+          const userId = await getUserIdByEmail(userEmail as string);
+          if (userId) {
+            await processTranscriptAndUpdateGraph(
+              { transcript, facts, summary },
+              userId,
+              userName
+            );
+            console.log("Successfully processed transcript and updated Zep graph");
+          }
+        } catch (error) {
+          console.error("Failed to process transcript with Zep:", error);
         }
+
+
+
+        // if (error) {
+        //   console.error('Failed to save transcript to database:', error);
+        // }
       } catch (dbError) {
         console.error('Database operation failed:', dbError);
       }

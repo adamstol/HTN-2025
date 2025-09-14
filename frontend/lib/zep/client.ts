@@ -1,11 +1,12 @@
 import { ZepClient, Zep, ZepError } from "@getzep/zep-cloud";
 import { getWeek } from "date-fns";
 import { SharedStore } from "../pocketflow/types";
-import { getUserIdByEmail } from "../supabase/queries";
+import { getUserIdByEmail } from "../supabase/client-queries";
 import users from "./mock_users.json";
 
-const API_KEY = process.env.ZEP_API_KEY;
+const API_KEY = process.env.ZEP_API_KEY || process.env.NEXT_PUBLIC_ZEP_API_KEY;
 
+console.log("API_KEY", API_KEY);
 export const client = new ZepClient({
   apiKey: API_KEY,
 });

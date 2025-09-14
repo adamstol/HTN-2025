@@ -36,7 +36,7 @@ export async function POST(req: Request) {
     .digest("hex");
 
   // Call Python backend analyzer (best-effort)
-  const backendBase = process.env.BACKEND_URL || "http://localhost:5000";
+  const backendBase = process.env.BACKEND_URL || "http://localhost:5001";
   let analysis: unknown = null;
   try {
     const res = await fetch(`${backendBase}/analyze`, {

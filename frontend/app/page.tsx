@@ -71,7 +71,7 @@ const Index = () => {
             </span>
           </h1>
           <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            Transform your conversations into actionable insights with advanced AI transcription, 
+            Transform your conversations into actionable insights with advanced AI transcription,
             speaker identification, and intelligent analysis.
           </p>
         </div>
@@ -98,9 +98,9 @@ const Index = () => {
         {isLoggedIn ? (
           <div className="flex justify-center">
             <Link href="/record">
-              <button className="bg-primary/25 backdrop-blur-lg border border-primary/30 rounded-full px-12 py-6 text-xl font-medium text-white flex items-center justify-center space-x-3 hover:bg-primary/35 transition-all duration-300 transform hover:scale-105">
-                <Mic className="w-6 h-6" />
-                <span>Live Recording</span>
+              <button className="bg-primary/25 backdrop-blur-lg border border-primary/30 rounded-full px-8 py-3 text-xl font-medium text-white flex items-center justify-center space-x-3 hover:bg-primary/35 transition-all duration-300 transform hover:scale-105 cursor-pointer">
+                <Mic className="w-4 h-4" />
+                <span>Get Started</span>
               </button>
             </Link>
           </div>

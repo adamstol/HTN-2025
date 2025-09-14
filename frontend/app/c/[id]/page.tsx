@@ -2,6 +2,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import JoinClient from './JoinClient';
+import SessionStartingView from '@/app/record/[id]/components/SessionStartingView';
+import { ConversationData } from '@/lib/types';
 
 export default async function Join({
   params,
@@ -41,9 +43,17 @@ export default async function Join({
       </div>
     );
   }
+  const conversation: ConversationData = {
+    id: id,
+    // 1 min ago
+    started_at: new Date(new Date().getTime() - 60 * 1000).toISOString(),
+    ended_at: new Date().toISOString(),
+    location: undefined,
+    status: 'active',
+    initiator_user_id: user.id,
+    invite_code: code as string,
+  };
   return (
-    <main>
-      hi
-    </main>
+    <SessionStartingView conversationId={id} conversation={conversation} />
   )
 }

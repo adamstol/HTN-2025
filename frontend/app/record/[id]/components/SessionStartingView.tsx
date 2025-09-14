@@ -12,16 +12,16 @@ interface SessionStartingViewProps {
 
 export default function SessionStartingView({ conversationId, conversation }: SessionStartingViewProps) {
   const router = useRouter();
-  
-  // Auto-redirect after a delay
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      router.push(`/record/${conversationId}`);
-    }, 3000);
-    
-    return () => clearTimeout(timer);
-  }, [conversationId, router]);
-  
+
+  // // Auto-redirect after a delay
+  // useEffect(() => {
+  //   const timer = setTimeout(() => {
+  //     router.push(`/record/${conversationId}`);
+  //   }, 3000);
+
+    // return () => clearTimeout(timer);
+  // }, [conversationId, router]);
+
   return (
     <div className="flex-1 flex flex-col items-center justify-center w-full max-w-md mx-auto">
       <div className="bg-white/10 backdrop-blur-md rounded-3xl p-10 w-full flex flex-col items-center">
@@ -32,7 +32,7 @@ export default function SessionStartingView({ conversationId, conversation }: Se
           </div>
           <div className="absolute inset-0 w-20 h-20 rounded-full border-4 border-green-500 animate-ping opacity-20"></div>
         </div>
-        
+
         {/* Text content */}
         <h2 className="text-xl font-medium text-white mb-2 text-center">
           Your conversation will be recorded and analyzed
@@ -40,14 +40,14 @@ export default function SessionStartingView({ conversationId, conversation }: Se
         <p className="text-gray-300 text-sm mb-6 text-center">
           Your session is starting
         </p>
-        
+
         {/* Progress indicator */}
         <div className="flex items-center gap-2 text-gray-400 text-sm">
           <Loader2 className="w-4 h-4 animate-spin" />
           <span>Preparing recording environment...</span>
         </div>
       </div>
-      
+
       {/* Session details */}
       <div className="mt-8 w-full">
         <div className="bg-white/5 rounded-xl p-4">

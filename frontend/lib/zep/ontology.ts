@@ -248,17 +248,18 @@ const Goal: EntityType = {
   },
 };
 
-const Dorm: EntityType = {
-  description: `A dormitory building in University of ${env.LOCATION_ID === "uofc" ? "Calgary" : "Waterloo"} campus. For example, User('Bob') -> RESIDES_IN -> Dorm('KA')`,
-  fields: {
-    code: entityFields.text("Dorm code, here's a list of dorms and their associated codes:'Kananaskis Hall'->'KA','Rundle Hall'->'RU','International House'->'IH','Yamnuska Hall'->'YA','Cascade Hall'->'CD','Aurora Hall'->'AU','Glacier Hall'->'GL','Olympus Hall'->'OL','Crowsnest Hall'->'CR','Varsity Courts'->'VC'"),
-  },
-};
-
 const Language: EntityType = {
   description: "Language spoken by a User. For example, User('Alice') -> SPEAKS -> Language('spa')",
   fields: {
     code: entityFields.text("Three-letter language code; e.g., ara, eng, fra, spa, deu, dan, zho, jpn, etc."),
+  },
+};
+
+const Friend: EntityType = {
+  description: "A friend of the User identified from conversations. For example, User('Alice') -> FRIENDS_WITH -> Friend('Bob')",
+  fields: {
+    speaker_id: entityFields.text("Original speaker identifier from the conversation"),
+    description: entityFields.text("Additional context about the friend"),
   },
 };
 
@@ -422,7 +423,9 @@ async function createOntology() {
     {
       Trait,
       Goal,
+      MeetupType,
       Language,
+      Friend,
       // Group,
       // Persona,
     },
