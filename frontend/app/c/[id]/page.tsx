@@ -54,6 +54,10 @@ export default async function Join({
     invite_code: code as string,
   };
   return (
-    <SessionStartingView conversationId={id} conversation={conversation} />
+    <div className="h-screen flex items-center justify-center bg-gradient-to-b from-[#343D40] to-[#131519]">
+      <div className="w-full max-w-lg px-4">
+        <SessionStartingView conversationId={id} conversation={conversation} />
+      </div>
+    </div>
   )
 }

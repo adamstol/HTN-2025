@@ -25,18 +25,28 @@ export default function ConversationHistory({
   const [conversations] = useState<Conversation[]>([
     {
       id: "1",
-      title: "Conversation 1",
-      timestamp: "Jan 2, 2025",
+      title: "Coffee chat with Alex",
+      timestamp: "Today, 2:30 PM",
     },
     {
       id: "2",
-      title: "Conversation 1",
-      timestamp: "Jan 2, 2025",
+      title: "Project planning",
+      timestamp: "Yesterday, 10:15 AM",
     },
     {
       id: "3",
-      title: "Conversation 1",
-      timestamp: "Jan 2, 2025",
+      title: "Interview with Sarah",
+      timestamp: "Jan 15, 2025",
+    },
+    {
+      id: "4",
+      title: "Team standup",
+      timestamp: "Jan 10, 2025",
+    },
+    {
+      id: "5",
+      title: "Product demo",
+      timestamp: "Dec 28, 2024",
     },
   ]);
 
