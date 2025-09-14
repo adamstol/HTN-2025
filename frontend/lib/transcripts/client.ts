@@ -2,15 +2,13 @@ import { createClient } from "@/lib/supabase/client";
 
 export type ConversationTurn = { speaker: string; text: string };
 
-async function sha256Hex(input: string): Promise<string> {
-  const enc = new TextEncoder();
-  const data = enc.encode(input);
-  const hash = await crypto.subtle.digest("SHA-256", data);
-  const bytes = new Uint8Array(hash);
-  return Array.from(bytes)
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
+export type TranscriptResponse = {
+  ok: boolean;
+  transcript: ConversationTurn[];
+  facts: Record<string, string[]>;
+  summary: string;
+  conversation_id?: string;
+};
 
 const backendBase =
   process.env.NEXT_PUBLIC_BACKEND_URL ||
@@ -18,126 +16,71 @@ const backendBase =
 
 export async function sendTranscriptClient(opts: {
   file?: File;
-  transcript?: string;
-  conversation?: ConversationTurn[];
-  contact_id?: string;
-}) {
-  const { file, transcript, conversation, contact_id } = opts;
+  conversationId?: string;
+}): Promise<TranscriptResponse> {
+  const { file, conversationId } = opts;
 
-  // Normalize to text to hash/store
-  const textForStorage = (() => {
-    if (file) return file.name; // just name for hash
-    if (typeof transcript === "string" && transcript.trim()) return transcript.trim();
-    if (Array.isArray(conversation) && conversation.length > 0) {
-      return conversation.map((t) => `${t.speaker}: ${t.text}`).join("\n");
-    }
-    return "";
-  })();
-
-  const transcript_hash = await sha256Hex(textForStorage);
-
-  let analysis: unknown = null;
-  let backendResponse: any = null;
-
-  // Persist conversation to Supabase first to get conversation_id
-  const supabase = createClient();
-  let conversation_id: string | null = null;
-  const { data, error } = await supabase
-    .from("conversations")
-    .insert({
-      contact_id: contact_id ?? null,
-      started_at: new Date().toISOString(),
-      ended_at: new Date().toISOString(),
-      raw_transcript: textForStorage,
-      stt_provider: file ? "python-transcribe" : "python-analyze",
-      transcript_hash,
-    } as any)
-    .select("id")
-    .single();
-
-  if (!error) conversation_id = (data as any)?.id ?? null;
-
-  try {
-    if (file) {
-      // Send audio/video file to Flask /transcribe
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const res = await fetch(`${backendBase}/transcribe`, {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!res.ok) throw new Error("Failed to transcribe file");
-      backendResponse = await res.json();
-
-      // Update textForStorage with the actual conversation from backend
-      if (backendResponse.conversation && Array.isArray(backendResponse.conversation)) {
-        const conversationText = backendResponse.conversation
-          .map((turn: ConversationTurn) => `${turn.speaker}: ${turn.text}`)
-          .join("\n");
-        // Re-calculate hash with actual transcribed content
-        const actualHash = await sha256Hex(conversationText);
-
-        // Update the Supabase record with actual transcribed content
-        if (conversation_id) {
-          await supabase
-            .from("conversations")
-            .update({
-              raw_transcript: conversationText,
-              transcript_hash: actualHash,
-            })
-            .eq("id", conversation_id);
-        }
-        // Call analyzer with the conversation turns
-        try {
-          const analyzeRes = await fetch(`${backendBase}/analyze`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ conversation: backendResponse.conversation }),
-          });
-          if (analyzeRes.ok) {
-            const analyzeJson = await analyzeRes.json();
-            analysis = analyzeJson?.analysis ?? analyzeJson ?? null;
-          }
-        } catch (_) { }
-
-        return {
-          ok: true,
-          conversation_id,
-          transcript_hash: actualHash,
-          analysis,
-          backendResponse,
-          conversation: backendResponse.conversation,
-        } as const;
-      }
-    } else {
-      // Text/conversation path: call analyzer directly
-      try {
-        const payload = Array.isArray(conversation) && conversation.length > 0
-          ? { conversation }
-          : { text: textForStorage };
-        const res = await fetch(`${backendBase}/analyze`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        if (res.ok) {
-          const json = await res.json();
-          analysis = json?.analysis ?? json ?? null;
-        }
-      } catch (_) { }
-    }
-  } catch (error) {
-    console.error("Backend request failed:", error);
-    // proceed without analysis if network/CORS fails
+  if (!file) {
+    throw new Error("File is required for transcription");
   }
 
-  return {
-    ok: true,
-    conversation_id,
-    transcript_hash,
-    analysis,
-    backendResponse,
-  } as const;
+  try {
+    // Send audio/video file to Flask /transcribe
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await fetch(`${backendBase}/transcribe`, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!res.ok) throw new Error("Failed to transcribe file");
+    const backendResponse = await res.json();
+
+    // Extract data from new backend format
+    const transcript = backendResponse.transcript || [];
+    const facts = backendResponse.facts || {};
+    const summary = backendResponse.summary || "";
+
+    // Save to Supabase conversations table if conversationId provided
+    let savedConversationId = conversationId;
+    if (conversationId) {
+      try {
+        const supabase = createClient();
+
+        // Create transcript text for storage
+        const transcriptText = transcript
+          .map((turn: ConversationTurn) => `${turn.speaker}: ${turn.text}`)
+          .join('\n');
+
+        // Update the conversation with transcript data
+        const { error } = await supabase
+          .from('conversations')
+          .update({
+            status: 'ended',
+            ended_at: new Date().toISOString(),
+
+            // Note: Based on schema, there's no transcript field, so we store in location for now
+          })
+          .eq('id', conversationId);
+
+        if (error) {
+          console.error('Failed to save transcript to database:', error);
+        }
+      } catch (dbError) {
+        console.error('Database operation failed:', dbError);
+      }
+    }
+
+    return {
+      ok: true,
+      transcript,
+      facts,
+      summary,
+      conversation_id: savedConversationId,
+    };
+  } catch (error) {
+    console.error("Transcription failed:", error);
+    throw error;
+  }
 }

@@ -31,7 +31,7 @@ export async function createConversation() {
   const code = randomBytes(8).toString('base64url');
   const { data, error } = await supabase
     .from('conversations')
-    .insert({ initiator_user_id: user.id, status: 'pending', invite_code: code } as any)
+    .insert({ initiator_user_id: user.id, status: 'pending', invite_code: code, location: 'Engineering 7 | University of Waterloo', started_at: new Date().toISOString() } as any)
     .select('id, invite_code')
     .single();
   if (error) throw error;

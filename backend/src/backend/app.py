@@ -2,7 +2,8 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
 from dotenv import load_dotenv, find_dotenv
-import google.generativeai as genai
+
+# import google.generativeai as genai
 from openai import OpenAI
 import tempfile
 import json
@@ -30,10 +31,10 @@ if not openai_api_key:
     print("WARNING: OPENAI_API_KEY not found in environment variables")
 
 # Configure Gemini
-if google_api_key:
-    genai.configure(api_key=google_api_key)
-else:
-    print("ERROR: Cannot configure Gemini without GOOGLE_API_KEY")
+# if google_api_key:
+#     genai.configure(api_key=google_api_key)
+# else:
+#     print("ERROR: Cannot configure Gemini without GOOGLE_API_KEY")
 
 # Configure OpenAI
 if openai_api_key:
@@ -47,6 +48,7 @@ else:
 def home():
     return jsonify({"message": "HTN2025 Backend is running 🚀"})
 
+
 @app.route("/health")
 def health_check():
     return jsonify({"status": "healthy", "timestamp": time.time()})
@@ -59,13 +61,22 @@ def transcribe_and_analyze():
 
     # Check if API keys are available
     if not openai_api_key or client is None:
-        return jsonify({"error": "OpenAI API key not configured. Please set OPENAI_API_KEY environment variable."}), 500
+        return (
+            jsonify(
+                {
+                    "error": "OpenAI API key not configured. Please set OPENAI_API_KEY environment variable."
+                }
+            ),
+            500,
+        )
 
     audio_file = request.files["file"]
 
     try:
         # Save uploaded file temporarily
-        with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(audio_file.filename)[1]) as temp:
+        with tempfile.NamedTemporaryFile(
+            delete=False, suffix=os.path.splitext(audio_file.filename)[1]
+        ) as temp:
             audio_file.save(temp.name)
             temp_path = temp.name
 
@@ -73,13 +84,15 @@ def transcribe_and_analyze():
         transcription = client.audio.transcriptions.create(
             model="whisper-1",
             file=open(temp_path, "rb"),
-            response_format="verbose_json"
+            response_format="verbose_json",
         )
 
         # Single AI prompt to process everything
         segments = getattr(transcription, "segments", None)
         if segments:
-            segment_text = "\n".join([f"[{s.start:.2f}-{s.end:.2f}] {s.text.strip()}" for s in segments])
+            segment_text = "\n".join(
+                [f"[{s.start:.2f}-{s.end:.2f}] {s.text.strip()}" for s in segments]
+            )
         else:
             segment_text = f"[0.00-0.00] {transcription.text}"
 
@@ -126,29 +139,29 @@ OUTPUT FORMAT (return ONLY this JSON structure):
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": unified_prompt}],
-            temperature=0
+            temperature=0,
         )
 
         result_json = response.choices[0].message.content.strip()
-        
+
         try:
             result = json.loads(result_json)
-            
+
             # Validate required fields
             if not all(key in result for key in ["transcript", "facts", "summary"]):
                 raise ValueError("Missing required fields")
-                
+
             return jsonify(result)
-            
+
         except (json.JSONDecodeError, ValueError) as e:
             # Fallback response
-            return jsonify({
-                "transcript": [{"speaker": "Unknown", "text": transcription.text}],
-                "facts": {
-                    "Unknown": ["No facts could be extracted"]
-                },
-                "summary": "Transcription completed but detailed analysis failed."
-            })
+            return jsonify(
+                {
+                    "transcript": [{"speaker": "Unknown", "text": transcription.text}],
+                    "facts": {"Unknown": ["No facts could be extracted"]},
+                    "summary": "Transcription completed but detailed analysis failed.",
+                }
+            )
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -156,26 +169,31 @@ OUTPUT FORMAT (return ONLY this JSON structure):
 
 def keep_alive():
     """Send a request to the health endpoint every 5 minutes to keep the server active"""
+
     def ping_server():
         while True:
             try:
                 time.sleep(300)  # Wait 5 minutes
                 # Get the server URL from environment or use localhost
-                server_url = os.environ.get("RENDER_EXTERNAL_URL", "http://localhost:5000")
+                server_url = os.environ.get(
+                    "RENDER_EXTERNAL_URL", "http://localhost:5000"
+                )
                 response = requests.get(f"{server_url}/health", timeout=10)
                 print(f"Keep-alive ping: {response.status_code}")
             except Exception as e:
                 print(f"Keep-alive ping failed: {e}")
-    
+
     # Start the ping thread
     ping_thread = threading.Thread(target=ping_server, daemon=True)
     ping_thread.start()
 
+
 if __name__ == "__main__":
     import os
+
     port = int(os.environ.get("PORT", 5000))
-    
+
     # Start keep-alive mechanism
     keep_alive()
-    
+
     app.run(debug=False, host="0.0.0.0", port=port)
