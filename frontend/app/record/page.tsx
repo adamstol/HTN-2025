@@ -129,7 +129,7 @@ export default function RecordPage() {
                   <Users className="w-5 h-5 text-gray-300" />
                 </div>
                 <div className="flex items-center justify-between flex-1">
-                  <p className="text-white text-xs ">Access your network</p>
+                  <p className="text-white text-xs ">Access network</p>
                   <MoveUpRight className="w-3 h-3 text-gray-400" />
                 </div>
               </div>
