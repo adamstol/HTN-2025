@@ -96,16 +96,9 @@ const Index = () => {
         </div>
 
         {isLoggedIn ? (
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button
-              onClick={() => router.push('/profile')}
-              size="lg"
-              className="rounded-full px-8 py-6 text-base font-medium bg-primary hover:bg-primary/90 text-primary-foreground"
-            >
-              Go to Profile
-            </Button>
+          <div className="flex justify-center">
             <Link href="/record">
-              <button className="bg-green-500/25 backdrop-blur-lg border border-green-400/30 rounded-full px-12 py-6 text-xl font-medium text-white flex items-center justify-center space-x-3 hover:bg-green-500/35 transition-all duration-300 transform hover:scale-105">
+              <button className="bg-primary/25 backdrop-blur-lg border border-primary/30 rounded-full px-12 py-6 text-xl font-medium text-white flex items-center justify-center space-x-3 hover:bg-primary/35 transition-all duration-300 transform hover:scale-105">
                 <Mic className="w-6 h-6" />
                 <span>Live Recording</span>
               </button>
