@@ -280,7 +280,7 @@ function TranscriptionView({ className = "" }: { className?: string }) {
               }`}
             >
               {/* Avatar */}
-              <div className={`w-8 h-8 rounded-full flex-shrink-0 ${message.avatar}`} />
+              <div className={`w-6 h-6 rounded-full flex-shrink-0 ${message.avatar}`} />
               
               {/* Message Content */}
               <div
