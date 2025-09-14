@@ -49,23 +49,25 @@ export default function RecordPage() {
 
         // Send to transcript API
         setIsProcessing(true);
-        try {
-          // Convert blob to File for the API
-          const audioFile = new File([audioBlob], `recording-${Date.now()}.webm`, {
-            type: 'audio/webm'
-          });
+        (async () => {
+          try {
+            // Convert blob to File for the API
+            const audioFile = new File([audioBlob], `recording-${Date.now()}.webm`, {
+              type: 'audio/webm'
+            });
 
-          console.log('Sending audio to transcript API:', audioFile);
-          const result = await sendTranscriptClient({ file: audioFile });
-          console.log('Transcript API result:', result);
+            console.log('Sending audio to transcript API:', audioFile);
+            const result = await sendTranscriptClient({ file: audioFile });
+            console.log('Transcript API result:', result);
 
-          setTranscriptResult(result);
-        } catch (error) {
-          console.error('Error processing transcript:', error);
-          alert('Error processing recording. Please try again.');
-        } finally {
-          setIsProcessing(false);
-        }
+            setTranscriptResult(result);
+          } catch (error) {
+            console.error('Error processing transcript:', error);
+            alert('Error processing recording. Please try again.');
+          } finally {
+            setIsProcessing(false);
+          }
+        })();
       };
 
       recorder.start();
