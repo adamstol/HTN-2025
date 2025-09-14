@@ -51,6 +51,7 @@ create table if not exists conversations (
   started_at timestamptz not null,
   ended_at timestamptz not null,
   location text,
+  invite_code text not null,
 );
 create index if not exists conversations_owner_started_idx on conversations(owner_id, started_at desc);
 create index if not exists conversations_contact_idx on conversations(contact_id);
