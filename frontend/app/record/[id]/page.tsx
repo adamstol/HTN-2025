@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import PendingView from "./components/PendingView";
 import CurrentView from "./components/CurrentView";
 import CompletedView from "./components/CompletedView";
+import SessionStartingView from "./components/SessionStartingView";
 import { ConversationData } from "@/lib/types";
 
 type Props = { params: Promise<{ id: string }> };
@@ -89,34 +90,11 @@ export default function ConversationPage({ params }: Props) {
     );
   }
 
-  const renderContent = () => {
-    switch (conversation.status) {
-      case 'pending':
-        return <PendingView conversationId={id} conversation={conversation} />;
-      case 'active':
-        return <CurrentView conversationId={id} />;
-      case 'ended':
-        return <CompletedView conversationId={id} conversation={conversation} />;
-      default:
-        return <PendingView conversationId={id} conversation={conversation} />;
-    }
-  };
-
+  // Always show the SessionStartingView for this page
   return (
     <div className="h-screen bg-gradient-to-b from-[#343D40] to-[#131519] text-white flex flex-col">
-      <button className="w-[30px] h-[30px] mt-5 ml-5 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-100/10 transition-colors">
-        <MoveUpLeft onClick={() => router.back()} className="w-4 h-4 text-white" />
-      </button>
-
       <div className="flex-1 flex flex-col items-center px-6">
-        <h1 className="text-2xl font-normal text-gray-200 mb-1" style={{ fontFamily: "Simonetta, serif" }}>
-          Conversation {id}
-        </h1>
-        <p className="text-[10px] text-gray-400 mb-4">
-          Status: {conversation.status.toUpperCase()}
-        </p>
-
-        {renderContent()}
+        <SessionStartingView conversationId={id} conversation={conversation} />
       </div>
     </div>
   );

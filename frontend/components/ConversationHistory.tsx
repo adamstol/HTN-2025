@@ -50,26 +50,13 @@ export default function ConversationHistory({
   };
 
   return (
-    <div
-      className={`h-screen bg-gradient-to-b from-[#343D40] to-[#131519] text-white flex flex-col ${className}`}>
-      <button
-        onClick={handleScrollBack}
-        className="bg-white w-[30px] h-[30px] mt-5 ml-5 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-100 transition-colors">
-        <ChevronUp className="w-5 h-5 text-black" />
-      </button>
-      <div className="flex-1 flex flex-col items-center px-6">
-        <h1
-          className="text-2xl font-normal text-gray-200 mb-8"
-          style={{ fontFamily: "Simonetta, serif" }}>
-          Conversation History
-        </h1>
-
+    <div className={`text-white w-full ${className}`}>
         {conversations.length === 0 ? (
-          <p className="text-gray-400 text-sm">
+          <p className="text-gray-400 text-sm text-center">
             Your conversation history will appear here
           </p>
         ) : (
-          <div className="w-full max-w-md space-y-3">
+          <div className="w-full max-w-md mx-auto space-y-3">
             {conversations.map((conversation) => (
               <div
                 key={conversation.id}
@@ -90,7 +77,6 @@ export default function ConversationHistory({
             ))}
           </div>
         )}
-      </div>
     </div>
   );
 }

@@ -3,20 +3,40 @@
 import { ChevronLeft, MoveUpRight } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
+
+// Connection interface aligned with database schema
+interface Connection {
+  id: string;
+  name: string;
+  email: string;
+  created_at: string;
+  gender: string | null;
+  profile_picture?: string; // Not in DB, just for UI
+  last_interaction_at?: string; // Derived from conversations
+}
+
+// Helper function to format relative time
+const formatRelativeTime = (date: Date): string => {
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  
+  if (diffInSeconds < 60) return 'just now';
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`;
+  if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 604800)} weeks ago`;
+  
+  // For older dates, return the actual date
+  return date.toLocaleDateString();
+};
 
 interface NetworkProps {
     className?: string;
     onScrollBack?: () => void;
 }
 
-interface Connection {
-    id: string;
-    name: string;
-    timeConnected: string;
-    profilePicture: string;
-    email?: string;
-    userId?: string;
-}
+// Using Connection interface from mock-supabase.ts
 
 const avatarNames = [
     "Brian",
@@ -47,41 +67,31 @@ export function NetworkPage({ className = "", onScrollBack }: NetworkProps) {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     
-    // Generate random connections with avatars (fallback for development)
-    const generateRandomConnections = () => {
-        const connectionNames = ['Alex Johnson', 'Sarah Chen', 'Michael Rodriguez', 'Emma Wilson', 'David Kim'];
-        const timeOptions = ['Connected 2 hours ago', 'Connected yesterday', 'Connected 3 days ago', 'Connected 1 week ago', 'Connected 2 weeks ago'];
+    // We'll use the mockSupabaseApi instead of generating connections directly
 
-        return connectionNames.map((name, index) => {
-            const randomAvatarIndex = Math.floor(Math.random() * avatarNames.length);
-            const randomTimeIndex = Math.floor(Math.random() * timeOptions.length);
-
-            return {
-                id: `conn_${Date.now()}_${index}`, // More unique ID format
-                name,
-                timeConnected: timeOptions[randomTimeIndex],
-                profilePicture: avatarNames[randomAvatarIndex],
-                email: `${name.toLowerCase().replace(' ', '.')}@example.com`,
-                userId: `user_${index + 1}`
-            };
-        });
-    };
-
-    // Fetch connections from API
+    // Fetch connections from our API route (which uses Supabase Edge Function)
     const fetchConnections = async () => {
         try {
             setIsLoading(true);
             setError(null);
             
-            // TODO: Replace with actual API call
-            // const response = await fetch('/api/network/connections');
-            // const data = await response.json();
-            // setConnections(data.connections);
+            // Call our API route
+            const response = await fetch('/api/network');
             
-            // For now, simulate API delay and use mock data
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            const mockConnections = generateRandomConnections();
-            setConnections(mockConnections);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to load network connections');
+            }
+            
+            const data = await response.json();
+            
+            // Add profile pictures for UI (in a real app, these would come from the database)
+            const connectionsWithPictures = data.map((connection: any) => ({
+                ...connection,
+                profile_picture: connection.name.split(' ')[0] // Use first name as avatar seed
+            }));
+            
+            setConnections(connectionsWithPictures);
             
         } catch (err) {
             setError('Failed to load network connections');
@@ -155,7 +165,7 @@ export function NetworkPage({ className = "", onScrollBack }: NetworkProps) {
                                 <div className='flex items-center'>
                                     <div className='w-10 h-10 rounded-full mr-4 overflow-hidden'>
                                         <img
-                                            src={`https://api.dicebear.com/9.x/notionists-neutral/svg?seed=${connection.profilePicture}`}
+                                            src={`https://api.dicebear.com/9.x/notionists-neutral/svg?seed=${connection.profile_picture || connection.name}`}
                                             alt="avatar"
                                             className="w-full h-full object-cover"
                                         />
@@ -165,7 +175,9 @@ export function NetworkPage({ className = "", onScrollBack }: NetworkProps) {
                                             {connection.name}
                                         </h3>
                                         <p className="text-gray-400 text-xs mt-1">
-                                            {connection.timeConnected}
+                                            {connection.last_interaction_at ? 
+                                              `Last interaction ${formatRelativeTime(new Date(connection.last_interaction_at))}` : 
+                                              `Connected ${formatRelativeTime(new Date(connection.created_at))}`}
                                         </p>
                                     </div>
                                 </div>
