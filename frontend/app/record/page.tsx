@@ -5,6 +5,7 @@ import { Users, Sparkles, MoveUpRight, Mic, Square } from 'lucide-react';
 import ConversationHistory from '@/components/ConversationHistory';
 import { sendTranscriptClient } from '@/lib/transcripts/client';
 
+
 export default function RecordPage() {
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
@@ -19,30 +20,33 @@ export default function RecordPage() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaStreamRef.current = stream;
-      
+
       const recorder = new MediaRecorder(stream);
       setMediaRecorder(recorder);
-      
+
       // Clear previous audio chunks
       audioChunksRef.current = [];
-      
+
       recorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data);
         }
       };
-      
-      recorder.onstop = async () => {
-        // Create audio blob from collected chunks
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+
+      recorder.onstop = () => {
+        // Create MP3 blob from collected chunks
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/mp3' });
         setAudioBlob(audioBlob);
-        
+
+        // Create download URL for the MP3
+        const audioUrl = URL.createObjectURL(audioBlob);
         console.log('Recording completed. Audio blob created:', audioBlob);
-        
-        // Clean up stream
+        console.log('Download URL:', audioUrl);
+
+        // Clean up
         stream.getTracks().forEach(track => track.stop());
         setIsRecording(false);
-        
+
         // Send to transcript API
         setIsProcessing(true);
         try {
@@ -50,11 +54,11 @@ export default function RecordPage() {
           const audioFile = new File([audioBlob], `recording-${Date.now()}.webm`, {
             type: 'audio/webm'
           });
-          
+
           console.log('Sending audio to transcript API:', audioFile);
           const result = await sendTranscriptClient({ file: audioFile });
           console.log('Transcript API result:', result);
-          
+
           setTranscriptResult(result);
         } catch (error) {
           console.error('Error processing transcript:', error);
@@ -63,7 +67,7 @@ export default function RecordPage() {
           setIsProcessing(false);
         }
       };
-      
+
       recorder.start();
       setIsRecording(true);
     } catch (error) {
@@ -88,7 +92,7 @@ export default function RecordPage() {
 
   const handleViewConversationHistory = () => {
     // Immediately scroll to conversation history section
-    conversationHistoryRef.current?.scrollIntoView({ 
+    conversationHistoryRef.current?.scrollIntoView({
       behavior: 'smooth',
       block: 'start'
     });
@@ -116,7 +120,7 @@ export default function RecordPage() {
         <div className="flex-1 flex items-center justify-center px-6">
           <div className="flex flex-col items-center">
             {/* Record Circle */}
-            <button 
+            <button
               onClick={handleRecordClick}
               className={`w-32 h-32 rounded-full flex items-center justify-center mb-6 transition-colors cursor-pointer hover:opacity-80 ${
                 isRecording ? 'bg-gray-500' : 'bg-gray-300'
@@ -128,13 +132,13 @@ export default function RecordPage() {
                 <Mic className="w-8 h-8 text-gray-700" />
               )}
             </button>
-            
-            {/* Status text */}
+
+            {/* Tap to record text */}
             <div className="text-center">
               <p className="text-gray-300 text-lg" style={{fontFamily: 'Simonetta, serif'}}>
                 {isRecording ? 'Recording...' : isProcessing ? 'Processing...' : 'Tap to record...'}
               </p>
-              
+
               {/* Transcript Results */}
               {transcriptResult && (
                 <div className="mt-4 p-4 bg-slate-800 rounded-lg max-w-md">
@@ -145,7 +149,7 @@ export default function RecordPage() {
                       <span className="text-gray-200 ml-2">{turn.text}</span>
                     </div>
                   ))}
-                  
+
                   {transcriptResult.analysis && (
                     <div className="mt-3 pt-3 border-t border-slate-600">
                       <h4 className="text-white text-xs font-semibold mb-1">Analysis:</h4>
@@ -190,7 +194,7 @@ export default function RecordPage() {
 
             {/* View Conversation History */}
             <div className="flex justify-center items-center pt-4">
-              <button 
+              <button
                 onClick={handleViewConversationHistory}
                 className="text-gray-400 text-sm hover:text-gray-300 transition-colors flex items-center justify-center gap-2"
               >
@@ -211,4 +215,3 @@ export default function RecordPage() {
     </>
   );
 }
-
