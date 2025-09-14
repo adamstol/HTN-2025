@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Users, Sparkles, MoveUpRight, Mic, Square } from "lucide-react";
 import ConversationHistory from "@/components/ConversationHistory";
@@ -17,9 +17,21 @@ export default function RecordClient() {
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [transcriptResult, setTranscriptResult] = useState<any>(null);
+  const [autoStarted, setAutoStarted] = useState(false);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const conversationHistoryRef = useRef<HTMLDivElement>(null);
+
+  // Auto-start recording when component mounts
+  useEffect(() => {
+    if (!autoStarted) {
+      setAutoStarted(true);
+      // Small delay to ensure component is fully mounted
+      setTimeout(() => {
+        startRecording();
+      }, 500);
+    }
+  }, [autoStarted]);
 
   const startRecording = async () => {
     try {

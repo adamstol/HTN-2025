@@ -12,10 +12,10 @@ type Bubble = {
 export default function BubbleField({ isRecording }: { isRecording: boolean }) {
   const [bubbles, setBubbles] = useState<Bubble[]>([]);
 
-  const centerX = window.innerWidth / 2;
-  const centerY = window.innerHeight / 2;
 
   const mapDistance = (x: number, y: number) => {
+    const centerX = window.innerWidth / 2;
+    const centerY = window.innerHeight / 2;
     const dx = centerX - x;
     const dy = centerY - y;
     const dist = Math.sqrt(dx * dx + dy * dy);
